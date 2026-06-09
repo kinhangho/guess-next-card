@@ -1,0 +1,14 @@
+{
+  "name": "guess-next-card",
+  "version": "1.0.0",
+  "description": "Guess Next Card – multiplayer push-up card game",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2"
+  }
+}
