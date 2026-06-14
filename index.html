@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guess Next Card</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ── Setup Screen ── -->
+<div id="setup-screen">
+  <div class="setup-box">
+    <div class="logo">🃏</div>
+    <h1>Guess Next Card</h1>
+    <p class="subtitle">A push-up card game</p>
+
+    <h2>How many players?</h2>
+    <div class="count-row" id="count-row"></div>
+
+    <div id="name-section" class="hidden">
+      <h2>Player Names</h2>
+      <div id="name-inputs"></div>
+      <button class="btn btn-gold" onclick="startGame()">▶ Start Game</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Game Screen ── -->
+<div id="game-screen" class="hidden">
+  <div class="layout">
+
+    <!-- Left: Scoreboard -->
+    <aside class="panel scoreboard-panel">
+      <div class="panel-title">Players</div>
+      <div id="scoreboard"></div>
+    </aside>
+
+    <!-- Centre: Table -->
+    <main class="main-area">
+      <div class="top-bar">
+        <span class="game-name">🃏 Guess Next Card</span>
+        <span id="deck-count" class="deck-badge">56 cards</span>
+      </div>
+
+      <div id="turn-banner" class="turn-banner"></div>
+
+      <div class="table-area">
+        <div class="card-station">
+          <div class="card-label">Current Card</div>
+          <div id="current-card" class="card"></div>
+        </div>
+        <div class="versus">▶</div>
+        <div class="card-station">
+          <div class="card-label">Next Card</div>
+          <div id="next-card" class="card back">?</div>
+        </div>
+      </div>
+
+      <div id="msg" class="msg hidden"></div>
+
+      <!-- Flip hint (2 health cards) -->
+      <div id="flip-zone" class="btn-row"></div>
+
+      <!-- Guess buttons -->
+      <div id="guess-zone" class="btn-row"></div>
+
+      <!-- Pass / Continue -->
+      <div id="action-zone" class="btn-row hidden"></div>
+
+      <!-- Push-up penalty zone -->
+      <div id="penalty-zone" class="penalty-zone hidden"></div>
+    </main>
+
+    <!-- Right: Joker side pile -->
+    <aside class="panel side-panel">
+      <div class="panel-title">Joker Pile</div>
+      <div id="side-pile"></div>
+    </aside>
+
+  </div>
+</div>
+
+<!-- ── Peek Modal ── -->
+<div id="peek-modal" class="modal hidden">
+  <div class="modal-box">
+    <h2>🔮 Peek!</h2>
+    <p>The next card is:</p>
+    <div id="peek-card" class="card" style="margin:20px auto;width:100px;height:140px"></div>
+    <p class="modal-note">Your 2 health cards have been shuffled back into the deck.</p>
+    <button class="btn btn-gold" onclick="closePeek()">Got it!</button>
+  </div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>

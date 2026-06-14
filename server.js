@@ -10,39 +10,27 @@ const io     = new Server(server, { cors: { origin: '*' } });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ── Rooms ────────────────────────────────────────────────────────────────────
-const rooms = new Map(); // roomId -> room
+const rooms = new Map();
 
-function makeRoomId() {
-  return crypto.randomBytes(3).toString('hex').toUpperCase();
-}
+function makeRoomId() { return crypto.randomBytes(3).toString('hex').toUpperCase(); }
 
 function createRoom(hostSocketId, hostName, isPrivate) {
   const id = makeRoomId();
   const room = {
-    id,
-    isPrivate,
-    hostSocketId,
+    id, isPrivate, hostSocketId,
     status: 'lobby',
     players: [{ socketId: hostSocketId, name: hostName, pushUps: 0, healthCards: [], connected: true }],
-    deck: [],
-    currentCard: null,
-    drawnCard: null,
-    deckCount: 0,
-    currentPlayerIndex: 0,
-    sidePile: [],
+    deck: [], currentCard: null, drawnCard: null, deckCount: 0,
+    currentPlayerIndex: 0, sidePile: [],
     phase: 'guessing',
-    pendingPushUps: 0,
-    penaltyQueue: [],
-    passAvailable: false,
-    message: null,
-    peekCard: null,
+    pendingPushUps: 0, penaltyQueue: [],
+    passAfterPenalty: false, passAvailable: false,
+    message: null, peekCard: null,
   };
   rooms.set(id, room);
   return room;
 }
 
-// ── Deck helpers ─────────────────────────────────────────────────────────────
 function buildDeck() {
   const suits  = ['♠','♥','♦','♣'];
   const colors = { '♠':'black','♥':'red','♦':'red','♣':'black' };
@@ -51,8 +39,8 @@ function buildDeck() {
   for (const suit of suits)
     for (const rank of ranks)
       deck.push({ rank, suit, color: colors[suit], type: ['J','Q','K'].includes(rank) ? 'face' : 'number' });
-  deck.push({ rank:'JOKER', suit:'★', color:'red',   type:'joker', label:'Red Joker'    });
-  deck.push({ rank:'JOKER', suit:'★', color:'black', type:'joker', label:'Black Joker'  });
+  deck.push({ rank:'JOKER', suit:'★', color:'red',   type:'joker',  label:'Red Joker'   });
+  deck.push({ rank:'JOKER', suit:'★', color:'black', type:'joker',  label:'Black Joker' });
   deck.push({ rank:'❤',     suit:'✚', color:'green', type:'health', label:'Health Card' });
   deck.push({ rank:'❤',     suit:'✚', color:'green', type:'health', label:'Health Card' });
   return shuffle(deck);
@@ -67,9 +55,7 @@ function shuffle(arr) {
   return a;
 }
 
-function rankVal(rank) {
-  return { A:1, J:11, Q:12, K:13 }[rank] ?? parseInt(rank);
-}
+function rankVal(rank) { return { A:1, J:11, Q:12, K:13 }[rank] ?? parseInt(rank); }
 
 function cardName(card) {
   if (card.type === 'health') return 'Health Card';
@@ -80,7 +66,7 @@ function cardName(card) {
 function evaluate(choice, current, next) {
   const cv = rankVal(current.rank);
   const nv = rankVal(next.rank);
-  if (cv === nv && current.color === next.color) return { correct: false, pushUps: 3, reason: 'Same rank & same color' };
+  if (cv === nv && current.color === next.color) return { correct: false, pushUps: 3, reason: 'Same rank & color' };
   if (cv === nv) return { correct: false, pushUps: 2, reason: 'Same rank' };
   let correct = false;
   if (current.type === 'number') {
@@ -109,13 +95,11 @@ function drawStartCard(room) {
   return null;
 }
 
-// ── Broadcast ─────────────────────────────────────────────────────────────────
 function broadcast(room) {
   room.deckCount = room.deck.length;
   room.players.forEach((p, idx) => {
     const s = io.sockets.sockets.get(p.socketId);
     if (!s) return;
-    // Only send peekCard to the current player
     const payload = { ...room, deck: undefined, myIndex: idx };
     if (idx !== room.currentPlayerIndex) payload.peekCard = null;
     s.emit('game-state', payload);
@@ -131,7 +115,6 @@ function publicRoomList() {
   return list;
 }
 
-// ── Disconnect / leave helper ─────────────────────────────────────────────────
 function handleLeave(socket, roomId) {
   const room = rooms.get(roomId);
   if (!room) return;
@@ -142,16 +125,12 @@ function handleLeave(socket, roomId) {
   if (room.players.length === 0) { rooms.delete(roomId); io.emit('public-rooms', publicRoomList()); return; }
   if (room.hostSocketId === socket.id) room.hostSocketId = room.players[0].socketId;
   if (room.currentPlayerIndex >= room.players.length) room.currentPlayerIndex = 0;
-  // remove from penalty queue
   room.penaltyQueue = room.penaltyQueue.filter(i => i !== idx).map(i => i > idx ? i - 1 : i);
-  if (room.penaltyQueue.length === 0 && room.phase === 'others-penalty') {
-    room.phase = 'guessing'; room.message = null;
-  }
+  if (room.penaltyQueue.length === 0 && room.phase === 'others-penalty') { room.phase = 'guessing'; room.message = null; }
   broadcast(room);
   if (!room.isPrivate) io.emit('public-rooms', publicRoomList());
 }
 
-// ── Socket.io ─────────────────────────────────────────────────────────────────
 io.on('connection', socket => {
   socket.on('get-public-rooms', () => socket.emit('public-rooms', publicRoomList()));
 
@@ -182,15 +161,10 @@ io.on('connection', socket => {
     room.status = 'playing';
     room.deck = buildDeck();
     room.currentCard = drawStartCard(room);
-    room.drawnCard = null;
-    room.currentPlayerIndex = 0;
-    room.sidePile = [];
-    room.phase = 'guessing';
-    room.pendingPushUps = 0;
-    room.penaltyQueue = [];
-    room.passAvailable = false;
-    room.message = null;
-    room.peekCard = null;
+    room.drawnCard = null; room.currentPlayerIndex = 0; room.sidePile = [];
+    room.phase = 'guessing'; room.pendingPushUps = 0; room.penaltyQueue = [];
+    room.passAfterPenalty = false; room.passAvailable = false;
+    room.message = null; room.peekCard = null;
     broadcast(room);
     if (!room.isPrivate) io.emit('public-rooms', publicRoomList());
   });
@@ -200,17 +174,16 @@ io.on('connection', socket => {
     if (!room || room.status !== 'playing' || room.phase !== 'guessing') return;
     const myIdx = room.players.findIndex(p => p.socketId === socket.id);
     if (myIdx !== room.currentPlayerIndex) return;
-    if (room.deck.length === 0) { room.message = { text: 'Deck empty — game over!', type: 'info' }; broadcast(room); return; }
+    if (room.deck.length === 0) { room.phase = 'ended'; broadcast(room); return; }
 
     const next = room.deck.shift();
     room.drawnCard = next;
 
     if (next.type === 'health') {
       room.players[myIdx].healthCards.push(next);
-      room.drawnCard = null; // health card absorbed, no display change
-      room.message = { text: `💚 Health Card! ${room.players[myIdx].name} receives a health card. Keep guessing!`, type: 'health' };
-      broadcast(room);
-      return;
+      room.drawnCard = null;
+      room.message = { text: `💚 Health Card! ${room.players[myIdx].name} keeps a health card. Keep guessing!`, type: 'health' };
+      broadcast(room); return;
     }
 
     if (choice === 'joker') {
@@ -222,40 +195,30 @@ io.on('connection', socket => {
         room.phase = 'others-penalty';
       } else {
         room.players[myIdx].pushUps += 2;
-        room.pendingPushUps = 2;
-        room.currentCard = next;
-        room.phase = 'wrong';
+        room.pendingPushUps = 2; room.currentCard = next;
+        room.phase = 'wrong'; room.passAfterPenalty = true;
         room.message = { text: `❌ Not a Joker! ${cardName(next)}. ${room.players[myIdx].name} does 2 push-ups!`, type: 'wrong' };
       }
-      broadcast(room);
-      return;
+      broadcast(room); return;
     }
 
     if (next.type === 'joker') {
       room.sidePile.push(next);
       room.players[myIdx].pushUps += 2;
-      room.pendingPushUps = 2;
+      room.pendingPushUps = 2; room.phase = 'wrong'; room.passAfterPenalty = true;
       room.message = { text: `🃏 Joker drawn! ${room.players[myIdx].name} does 2 push-ups!`, type: 'wrong' };
-      room.phase = 'wrong';
-      broadcast(room);
-      return;
+      broadcast(room); return;
     }
 
     const result = evaluate(choice, room.currentCard, next);
     if (result.correct) {
-      room.currentCard = next;
-      room.passAvailable = true;
-      room.phase = 'correct';
+      room.currentCard = next; room.passAvailable = true; room.phase = 'correct';
       room.message = { text: `✅ Correct! ${cardName(next)}`, type: 'correct' };
     } else {
       room.players[myIdx].pushUps += result.pushUps;
-      room.pendingPushUps = result.pushUps;
-      room.currentCard = next;
-      room.phase = 'wrong';
-      room.message = {
-        text: `❌ Wrong! ${result.reason ? result.reason + ' — ' : ''}${cardName(next)}. ${room.players[myIdx].name} does ${result.pushUps} push-up${result.pushUps > 1 ? 's' : ''}!`,
-        type: 'wrong',
-      };
+      room.pendingPushUps = result.pushUps; room.currentCard = next;
+      room.phase = 'wrong'; room.passAfterPenalty = false;
+      room.message = { text: `❌ ${result.reason ? result.reason + ' — ' : ''}${cardName(next)}. ${room.players[myIdx].name} does ${result.pushUps} push-up${result.pushUps > 1 ? 's' : ''}!`, type: 'wrong' };
     }
     broadcast(room);
   });
@@ -266,10 +229,8 @@ io.on('connection', socket => {
     const myIdx = room.players.findIndex(p => p.socketId === socket.id);
     if (myIdx !== room.currentPlayerIndex || room.phase !== 'correct') return;
     room.currentPlayerIndex = (room.currentPlayerIndex + 1) % room.players.length;
-    room.phase = 'guessing';
-    room.passAvailable = false;
-    room.drawnCard = null;
-    room.message = null;
+    room.phase = 'guessing'; room.passAvailable = false; room.drawnCard = null; room.message = null;
+    if (room.deck.length === 0) room.phase = 'ended';
     broadcast(room);
   });
 
@@ -278,10 +239,8 @@ io.on('connection', socket => {
     if (!room) return;
     const myIdx = room.players.findIndex(p => p.socketId === socket.id);
     if (myIdx !== room.currentPlayerIndex || room.phase !== 'correct') return;
-    room.phase = 'guessing';
-    room.passAvailable = false;
-    room.drawnCard = null;
-    room.message = null;
+    room.phase = 'guessing'; room.passAvailable = false; room.drawnCard = null; room.message = null;
+    if (room.deck.length === 0) room.phase = 'ended';
     broadcast(room);
   });
 
@@ -290,10 +249,11 @@ io.on('connection', socket => {
     if (!room) return;
     const myIdx = room.players.findIndex(p => p.socketId === socket.id);
     if (myIdx !== room.currentPlayerIndex || room.phase !== 'wrong') return;
-    room.phase = 'guessing';
-    room.pendingPushUps = 0;
-    room.drawnCard = null;
-    room.message = null;
+    if (room.passAfterPenalty)
+      room.currentPlayerIndex = (room.currentPlayerIndex + 1) % room.players.length;
+    room.phase = 'guessing'; room.pendingPushUps = 0; room.drawnCard = null;
+    room.passAfterPenalty = false; room.message = null;
+    if (room.deck.length === 0) room.phase = 'ended';
     broadcast(room);
   });
 
@@ -306,9 +266,10 @@ io.on('connection', socket => {
     if (p.healthCards.length === 0) return;
     p.healthCards.pop();
     p.pushUps -= room.pendingPushUps;
-    room.pendingPushUps = 0;
-    room.phase = 'guessing';
-    room.drawnCard = null;
+    if (room.passAfterPenalty)
+      room.currentPlayerIndex = (room.currentPlayerIndex + 1) % room.players.length;
+    room.pendingPushUps = 0; room.phase = 'guessing'; room.drawnCard = null;
+    room.passAfterPenalty = false;
     room.message = { text: `💚 Skip used! ${p.name} avoids the penalty.`, type: 'health' };
     broadcast(room);
   });
@@ -320,6 +281,7 @@ io.on('connection', socket => {
     if (!room.penaltyQueue.includes(myIdx)) return;
     room.penaltyQueue = room.penaltyQueue.filter(i => i !== myIdx);
     if (room.penaltyQueue.length === 0) { room.phase = 'guessing'; room.message = null; }
+    if (room.deck.length === 0 && room.phase === 'guessing') room.phase = 'ended';
     broadcast(room);
   });
 
@@ -350,7 +312,7 @@ io.on('connection', socket => {
   socket.on('disconnect', () => {
     rooms.forEach((_, roomId) => {
       const room = rooms.get(roomId);
-      if (room && room.players.some(p => p.socketId === socket.id))
+      if (room?.players.some(p => p.socketId === socket.id))
         handleLeave(socket, roomId);
     });
   });

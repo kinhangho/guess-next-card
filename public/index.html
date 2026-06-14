@@ -15,8 +15,9 @@
     <h1>Guess Next Card</h1>
     <p class="subtitle">A push-up card game</p>
     <div class="home-btn-col">
-      <button class="btn btn-gold btn-wide" onclick="showScreen('online-screen'); initSocket()">🌐 Play Online</button>
+      <button id="online-btn" class="btn btn-gold btn-wide" onclick="showScreen('online-screen'); initSocket()">🌐 Play Online</button>
       <button class="btn btn-outline btn-wide" onclick="showScreen('setup-screen'); initOfflineSetup()">👥 Play Offline</button>
+      <p id="native-note" class="hidden" style="color:#9ca3af;font-size:0.8rem;text-align:center">Online mode coming soon</p>
     </div>
   </div>
 </div>
@@ -39,7 +40,6 @@
       <button class="tab" id="tab-btn-browse" onclick="switchTab('browse')">Browse</button>
     </div>
 
-    <!-- Create Room -->
     <div id="tab-create" class="tab-panel">
       <label class="toggle-label">
         <input type="checkbox" id="room-private" />
@@ -48,7 +48,6 @@
       <button class="btn btn-gold btn-wide" onclick="createRoom()">Create Room</button>
     </div>
 
-    <!-- Join with Code -->
     <div id="tab-join" class="tab-panel hidden">
       <div class="field-group">
         <label class="field-label">Room Code</label>
@@ -57,7 +56,6 @@
       <button class="btn btn-gold btn-wide" onclick="joinRoomByCode()">Join Room</button>
     </div>
 
-    <!-- Browse Public Rooms -->
     <div id="tab-browse" class="tab-panel hidden">
       <div id="public-rooms-list" class="rooms-list"></div>
       <button class="btn btn-outline btn-wide" onclick="fetchPublicRooms()">↻ Refresh</button>
@@ -140,7 +138,7 @@
 
       <div id="msg" class="msg hidden"></div>
 
-      <!-- Flip hint -->
+      <!-- Flip hint (2 health cards) -->
       <div id="flip-zone" class="btn-row"></div>
 
       <!-- Waiting banner for non-active players (online mode) -->
@@ -152,7 +150,7 @@
       <!-- Pass / Continue -->
       <div id="action-zone" class="btn-row hidden"></div>
 
-      <!-- Push-up penalty zone -->
+      <!-- Penalty / Joker choice zone -->
       <div id="penalty-zone" class="penalty-zone hidden"></div>
     </main>
 
@@ -171,12 +169,32 @@
     <h2>🔮 Peek!</h2>
     <p>The next card is:</p>
     <div id="peek-card" class="card" style="margin:20px auto;width:100px;height:140px"></div>
-    <p class="modal-note">Your 2 health cards have been shuffled back into the deck.</p>
+    <p class="modal-note">Both health cards shuffled back into the deck.</p>
     <button class="btn btn-gold" onclick="ACTION.closePeek()">Got it!</button>
   </div>
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
+<!-- ── End Screen ── -->
+<div id="end-screen" class="hidden">
+  <div class="setup-box">
+    <div class="logo">🏆</div>
+    <h1>Game Over!</h1>
+    <p id="end-winner-name" class="subtitle"></p>
+    <div id="end-players" class="end-players"></div>
+    <p class="subtitle" style="font-size:0.75rem;color:#6b7280;text-align:center">Fewest push-ups wins!</p>
+    <button class="btn btn-gold btn-wide" onclick="showScreen('home-screen')">Play Again</button>
+  </div>
+</div>
+
+<script>
+  // Stub io() so game.js doesn't throw if socket.io fails to load (native/offline mode)
+  window._ioStubbed = false;
+  function io(url, opts) {
+    window._ioStubbed = true;
+    return { on(){}, emit(){}, connected: false, disconnect(){} };
+  }
+</script>
+<script src="js/socket.io.min.js"></script>
 <script src="game.js"></script>
 </body>
 </html>
