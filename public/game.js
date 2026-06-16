@@ -351,9 +351,11 @@ function triggerReveal() {
 
 function renderScoreboard() {
   const el = document.getElementById('scoreboard');
-  el.innerHTML = '';
+  const existing = el.querySelectorAll('.player-entry');
   G.players.forEach((p, i) => {
-    const div = document.createElement('div');
+    // Reuse existing chip so CSS transition fires on class toggle
+    let div = existing[i];
+    if (!div) { div = document.createElement('div'); el.appendChild(div); }
     div.className = 'player-entry' + (i === G.currentPlayerIndex ? ' active' : '');
     const isMe = MODE === 'online' && i === myPlayerIndex;
     div.innerHTML = `
@@ -361,8 +363,8 @@ function renderScoreboard() {
       <div class="pstats"><span class="pi">💪</span><span class="pn">${p.pushUps}</span></div>
       ${p.healthCards.length ? `<div class="phealth">${'💚'.repeat(p.healthCards.length)}</div>` : ''}
     `;
-    el.appendChild(div);
   });
+  while (el.children.length > G.players.length) el.removeChild(el.lastChild);
 }
 
 function renderCard(id, card) {
@@ -496,18 +498,15 @@ function renderPenaltyZone() {
 }
 
 function renderSidePile() {
-  const el = document.getElementById('side-pile');
-  el.innerHTML = '';
+  const badge = document.getElementById('joker-status');
+  if (!badge) return;
   if (!G.sidePile || G.sidePile.length === 0) {
-    el.innerHTML = '<div style="color:#4b5563;font-size:0.78rem;text-align:center">Empty</div>';
+    badge.classList.add('hidden');
     return;
   }
-  G.sidePile.forEach(c => {
-    const d = document.createElement('div');
-    d.className = `side-card ${c.color === 'red' ? 'red-joker' : 'black-joker'}`;
-    d.innerHTML = `<div>🃏</div><div>${c.color}</div>`;
-    el.appendChild(d);
-  });
+  const icons = G.sidePile.map(c => c.color === 'red' ? '🔴' : '⚫').join('');
+  badge.textContent = `🃏 ${icons} out`;
+  badge.classList.remove('hidden');
 }
 
 // ── Offline Game Logic ────────────────────────────────────────────────────────

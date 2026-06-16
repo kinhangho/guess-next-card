@@ -118,24 +118,29 @@
 
   <!-- Green felt: cards + turn info -->
   <main class="main-area">
-    <div class="top-bar">
-      <span class="game-name">🃏 Guess Next Card</span>
-      <span id="deck-count" class="deck-badge">56 cards</span>
-    </div>
-    <div id="turn-banner" class="turn-banner"></div>
-    <div class="table-area">
-      <div class="card-station">
-        <div class="card-label">Current</div>
-        <div id="current-card" class="card"></div>
+    <div class="felt-inner">
+      <div class="top-bar">
+        <span class="game-name">🃏 Guess Next Card</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span id="joker-status" class="deck-badge hidden"></span>
+          <span id="deck-count" class="deck-badge">56 cards</span>
+        </div>
       </div>
-      <div class="versus">▶</div>
-      <div class="card-station">
-        <div class="card-label">Next</div>
-        <div id="next-card" class="card back">?</div>
+      <div id="turn-banner" class="turn-banner"></div>
+      <div class="table-area">
+        <div class="card-station">
+          <div class="card-label">Current</div>
+          <div id="current-card" class="card"></div>
+        </div>
+        <div class="versus">▶</div>
+        <div class="card-station">
+          <div class="card-label">Next</div>
+          <div id="next-card" class="card back">?</div>
+        </div>
       </div>
+      <div id="msg" class="msg hidden"></div>
+      <div id="waiting-banner" class="waiting-banner hidden"></div>
     </div>
-    <div id="msg" class="msg hidden"></div>
-    <div id="waiting-banner" class="waiting-banner hidden"></div>
   </main>
 
   <!-- Action bar: all buttons live here, thumb-reach zone -->

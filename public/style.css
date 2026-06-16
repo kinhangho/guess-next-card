@@ -46,7 +46,8 @@ body {
 #home-screen,
 #online-screen,
 #lobby-screen,
-#setup-screen {
+#setup-screen,
+#end-screen {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -372,7 +373,6 @@ body {
   padding: 10px 14px;
   padding-top: max(12px, env(safe-area-inset-top));
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   flex-shrink: 0;
 }
@@ -381,7 +381,6 @@ body {
 #scoreboard {
   display: flex;
   gap: 8px;
-  width: max-content;
 }
 
 /* Player chips */
@@ -443,11 +442,20 @@ body {
   background-image: radial-gradient(ellipse at 50% 40%, var(--table-hi) 0%, var(--table) 100%);
   display: flex;
   flex-direction: column;
+  align-items: stretch;
+  overflow-y: auto;
+}
+/* Inner wrapper: centers content when space allows; scrolls from top when content overflows.
+   margin: auto on a flex child consumes free space — avoids the justify-content:center
+   footgun where overflowed content above the midpoint becomes unreachable. */
+.felt-inner {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 14px;
   padding: 16px 20px;
-  overflow-y: auto;
+  width: 100%;
+  margin: auto 0;
 }
 
 /* Zone 3: Action bar — buttons in thumb reach, above home indicator */
@@ -478,6 +486,7 @@ body {
 }
 .action-bar .penalty-zone .pushup-num { font-size: 4.5rem; }
 .action-bar .penalty-zone .pushup-label { font-size: 0.9rem; }
+.action-bar .penalty-zone .btn { width: 100%; min-height: 52px; }
 
 /* ── Top bar ── */
 .top-bar {
@@ -711,13 +720,7 @@ body {
 .modal-note   { color: var(--text-lo);  font-size: 0.8rem; }
 
 /* ── End Screen ── */
-#end-screen {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 32px 16px;
-}
+/* layout/safe-area handled by the shared setup-screens selector above */
 
 .end-players { display: flex; flex-direction: column; gap: 8px; width: 100%; }
 .end-player {
@@ -763,7 +766,8 @@ body {
 .action-fadein {
   animation: fade-up-in 0.3s ease-out;
 }
-.penalty-zone {
+/* Only pulse when not in the middle of the entrance animation */
+.penalty-zone:not(.action-fadein) {
   animation: penalty-pulse 1.8s ease-in-out infinite;
 }
 
@@ -785,6 +789,6 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .card.reveal-anim,
   .action-fadein,
-  .penalty-zone { animation: none; }
+  .penalty-zone:not(.action-fadein) { animation: none; }
   .btn:hover    { transform: none; }
 }
