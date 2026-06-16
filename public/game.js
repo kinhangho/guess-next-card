@@ -358,7 +358,7 @@ function renderScoreboard() {
     const isMe = MODE === 'online' && i === myPlayerIndex;
     div.innerHTML = `
       <div class="pname">${esc(p.name)}${isMe ? ' <span class="pme">(you)</span>' : ''}</div>
-      <div class="pstats">💪 ${p.pushUps}</div>
+      <div class="pstats"><span class="pi">💪</span><span class="pn">${p.pushUps}</span></div>
       ${p.healthCards.length ? `<div class="phealth">${'💚'.repeat(p.healthCards.length)}</div>` : ''}
     `;
     el.appendChild(div);
