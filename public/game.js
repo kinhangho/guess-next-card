@@ -3,7 +3,7 @@ const IS_NATIVE = !!(window.Capacitor?.isNativePlatform?.());
 if (IS_NATIVE) {
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('online-btn')?.classList.add('hidden');
-    document.getElementById('native-note')?.classList.remove('hidden');
+    document.getElementById('native-note')?.classList.add('hidden');
   });
 }
 

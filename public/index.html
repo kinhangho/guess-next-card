@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Guess Next Card</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -110,60 +110,45 @@
 
 <!-- ── Game Screen ── -->
 <div id="game-screen" class="hidden">
-  <div class="layout">
 
-    <!-- Left: Scoreboard -->
-    <aside class="panel scoreboard-panel">
-      <div class="panel-title">Players</div>
-      <div id="scoreboard"></div>
-    </aside>
-
-    <!-- Centre: Table -->
-    <main class="main-area">
-      <div class="top-bar">
-        <span class="game-name">🃏 Guess Next Card</span>
-        <span id="deck-count" class="deck-badge">56 cards</span>
-      </div>
-
-      <div id="turn-banner" class="turn-banner"></div>
-
-      <div class="table-area">
-        <div class="card-station">
-          <div class="card-label">Current Card</div>
-          <div id="current-card" class="card"></div>
-        </div>
-        <div class="versus">▶</div>
-        <div class="card-station">
-          <div class="card-label">Next Card</div>
-          <div id="next-card" class="card back">?</div>
-        </div>
-      </div>
-
-      <div id="msg" class="msg hidden"></div>
-
-      <!-- Flip hint (2 health cards) -->
-      <div id="flip-zone" class="btn-row"></div>
-
-      <!-- Waiting banner for non-active players (online mode) -->
-      <div id="waiting-banner" class="waiting-banner hidden"></div>
-
-      <!-- Guess buttons -->
-      <div id="guess-zone" class="btn-row"></div>
-
-      <!-- Pass / Continue -->
-      <div id="action-zone" class="btn-row hidden"></div>
-
-      <!-- Penalty / Joker choice zone -->
-      <div id="penalty-zone" class="penalty-zone hidden"></div>
-    </main>
-
-    <!-- Right: Joker side pile -->
-    <aside class="panel side-panel">
-      <div class="panel-title">Joker Pile</div>
-      <div id="side-pile"></div>
-    </aside>
-
+  <!-- Score strip: player chips scroll horizontally -->
+  <div class="score-strip">
+    <div id="scoreboard"></div>
   </div>
+
+  <!-- Green felt: cards + turn info -->
+  <main class="main-area">
+    <div class="top-bar">
+      <span class="game-name">🃏 Guess Next Card</span>
+      <span id="deck-count" class="deck-badge">56 cards</span>
+    </div>
+    <div id="turn-banner" class="turn-banner"></div>
+    <div class="table-area">
+      <div class="card-station">
+        <div class="card-label">Current</div>
+        <div id="current-card" class="card"></div>
+      </div>
+      <div class="versus">▶</div>
+      <div class="card-station">
+        <div class="card-label">Next</div>
+        <div id="next-card" class="card back">?</div>
+      </div>
+    </div>
+    <div id="msg" class="msg hidden"></div>
+    <div id="waiting-banner" class="waiting-banner hidden"></div>
+  </main>
+
+  <!-- Action bar: all buttons live here, thumb-reach zone -->
+  <div class="action-bar">
+    <div id="flip-zone" class="btn-row"></div>
+    <div id="guess-zone" class="btn-row"></div>
+    <div id="action-zone" class="btn-row hidden"></div>
+    <div id="penalty-zone" class="penalty-zone hidden"></div>
+  </div>
+
+  <!-- Side pile kept in DOM for JS, not shown on mobile -->
+  <div id="side-pile" style="display:none"></div>
+
 </div>
 
 <!-- ── Peek Modal ── -->

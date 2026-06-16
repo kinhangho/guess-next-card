@@ -51,7 +51,8 @@ body {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  padding: 32px 16px;
+  min-height: 100dvh;
+  padding: max(32px, env(safe-area-inset-top)) 16px max(32px, env(safe-area-inset-bottom));
 }
 
 .setup-box {
@@ -126,6 +127,7 @@ body {
   transition: transform .15s, box-shadow .15s, opacity .15s;
   white-space: nowrap;
   letter-spacing: 0.2px;
+  min-height: 48px;
 }
 .btn:hover  { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.4); }
 .btn:active { transform: translateY(0); box-shadow: none; }
@@ -354,53 +356,55 @@ body {
 }
 #name-inputs input:focus { outline: none; border-color: var(--gold); }
 
-/* ── Game Layout ── */
-#game-screen { min-height: 100vh; }
-
-.layout {
-  display: grid;
-  grid-template-columns: 180px 1fr 140px;
-  min-height: 100vh;
+/* ── Game Screen — mobile-first, 3-zone flex column ── */
+#game-screen {
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-/* ── Side panels ── */
-.panel {
+/* Zone 1: Score strip — player chips scroll horizontally */
+.score-strip {
   background: var(--surface-1);
-  padding: 18px 12px;
-  border-top: none;
+  border-bottom: 1.5px solid var(--border);
+  padding: 10px 14px;
+  padding-top: max(12px, env(safe-area-inset-top));
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex-shrink: 0;
 }
-.scoreboard-panel { border-right: 1.5px solid var(--border); }
-.side-panel       { border-left:  1.5px solid var(--border); }
+.score-strip::-webkit-scrollbar { display: none; }
 
-.panel-title {
-  font-family: var(--font-display);
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 2.5px;
-  color: var(--text-lo);
-  margin-bottom: 16px;
-  font-weight: 700;
+#scoreboard {
+  display: flex;
+  gap: 8px;
+  width: max-content;
 }
 
-/* ── Player entries — THE RISK: push-up count dominates ── */
+/* Player chips */
 .player-entry {
-  padding: 10px 8px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 10px;
   border-radius: var(--r-md);
-  margin-bottom: 8px;
-  background: rgba(255,255,255,.025);
   border: 1.5px solid transparent;
+  background: rgba(255,255,255,.025);
+  min-width: 64px;
+  flex-shrink: 0;
   transition: all .2s;
   text-align: center;
-  position: relative;
 }
 .player-entry.active {
   border-color: var(--gold);
   background: var(--gold-dim);
-  box-shadow: 0 0 16px var(--gold-glow);
+  box-shadow: 0 0 12px var(--gold-glow);
 }
-
 .player-entry .pname {
-  font-size: 0.65rem;
+  font-size: 0.58rem;
   color: var(--text-lo);
   text-transform: uppercase;
   letter-spacing: 1.5px;
@@ -408,52 +412,72 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 72px;
 }
 .player-entry.active .pname { color: var(--gold); }
-
-.player-entry .pme {
-  font-size: 0.6rem;
-  color: var(--gold);
-  font-weight: 700;
-}
-
-/* The dominant number — scoreboard leaderboard style */
+.player-entry .pme { font-size: 0.55rem; color: var(--gold); font-weight: 700; }
 .player-entry .pstats {
   font-family: var(--font-display);
-  font-size: 2.8rem;
+  font-size: 2rem;
   font-weight: 900;
   color: var(--text-hi);
   line-height: 1;
-  margin: 4px 0 0;
-  letter-spacing: -1px;
+  margin: 3px 0 1px;
+  letter-spacing: -0.5px;
 }
 .player-entry.active .pstats { color: var(--gold); }
 .player-entry .pstats .pi {
-  font-size: 0.9rem;
+  font-size: 0.72rem;
   vertical-align: middle;
-  margin-right: 2px;
   opacity: 0.6;
+  margin-right: 1px;
 }
-.player-entry .pstats .pn {
-  vertical-align: middle;
-}
+.player-entry .pstats .pn { vertical-align: middle; }
+.player-entry .phealth { font-size: 0.65rem; color: #4ade80; }
 
-.player-entry .phealth {
-  font-size: 0.7rem;
-  color: #4ade80;
-  margin-top: 3px;
-}
-
-/* ── Main game area ── */
+/* Zone 2: Green felt — cards + turn info */
 .main-area {
+  flex: 1;
+  min-height: 0;
   background: var(--table);
-  background-image: radial-gradient(ellipse at 50% 30%, var(--table-hi) 0%, var(--table) 100%);
-  padding: 20px 24px;
+  background-image: radial-gradient(ellipse at 50% 40%, var(--table-hi) 0%, var(--table) 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 14px;
+  padding: 16px 20px;
+  overflow-y: auto;
 }
+
+/* Zone 3: Action bar — buttons in thumb reach, above home indicator */
+.action-bar {
+  background: var(--surface-1);
+  border-top: 1.5px solid var(--border);
+  padding: 12px 16px;
+  padding-bottom: max(14px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  flex-shrink: 0;
+}
+.action-bar .btn-row {
+  width: 100%;
+  gap: 8px;
+}
+.action-bar .btn-row .btn {
+  flex: 1;
+  min-height: 52px;
+  font-size: 1rem;
+  padding: 12px 8px;
+}
+.action-bar .penalty-zone {
+  width: 100%;
+  border-radius: var(--r-md);
+  padding: 14px 20px;
+}
+.action-bar .penalty-zone .pushup-num { font-size: 4.5rem; }
+.action-bar .penalty-zone .pushup-label { font-size: 0.9rem; }
 
 /* ── Top bar ── */
 .top-bar {
@@ -520,8 +544,8 @@ body {
 
 /* ── Cards ── */
 .card {
-  width: 100px;
-  height: 140px;
+  width: 96px;
+  height: 136px;
   border-radius: 10px;
   background: #FAFAF7;
   border: 2px solid #D8D8D0;
@@ -743,38 +767,13 @@ body {
   animation: penalty-pulse 1.8s ease-in-out infinite;
 }
 
-/* ── Responsive ── */
-@media (max-width: 700px) {
-  .layout { grid-template-columns: 1fr; }
-
-  .scoreboard-panel {
-    border-right: none;
-    border-bottom: 1.5px solid var(--border);
-    display: flex;
-    flex-direction: row;
-    gap: 8px;
-    overflow-x: auto;
-    padding: 10px 12px;
-    min-height: unset;
-  }
-  .scoreboard-panel .panel-title { display: none; }
-  #scoreboard { display: flex; gap: 8px; align-items: flex-start; }
-
-  .player-entry {
-    min-width: 90px;
-    margin-bottom: 0;
-    flex-shrink: 0;
-  }
-  .player-entry .pstats { font-size: 2rem; }
-
-  .side-panel { display: none; }
-
-  .card { width: 80px; height: 114px; }
-  .card .rank { font-size: 1.4rem; }
-  .card .suit { font-size: 1rem; }
-  .card.back  { font-size: 2rem; }
-
-  .penalty-zone .pushup-num { font-size: 3.5rem; }
+/* ── Desktop: wider cards and layout tweak ── */
+@media (min-width: 700px) {
+  .card { width: 110px; height: 154px; }
+  .player-entry { min-width: 72px; }
+  .player-entry .pstats { font-size: 2.4rem; }
+  .action-bar { padding-left: 24px; padding-right: 24px; }
+  .action-bar .btn-row .btn { font-size: 1.05rem; }
 }
 
 /* ── Focus / accessibility ── */
