@@ -103,6 +103,7 @@ function initSocket() {
 
   socket.on('game-state', (room) => {
     const prevPhase = G.phase;
+    const prevChallengedIdx = G.challengedIdx;
     myPlayerIndex        = room.myIndex;
     currentRoomId        = room.id;
     isHost               = room.hostSocketId === socket.id;
@@ -133,6 +134,7 @@ function initSocket() {
       renderEndScreen();
     } else {
       showScreen('game-screen');
+      if (prevChallengedIdx === null && G.challengedIdx !== null) AUDIO.challenge();
       if (justResolved) {
         triggerReveal();
       } else {
@@ -349,6 +351,7 @@ function renderAll() {
 }
 
 function triggerReveal() {
+  AUDIO.cardFlip();
   G.revealPause = true;
   renderAll();
   const nextEl = document.getElementById('next-card');
@@ -362,6 +365,8 @@ function triggerReveal() {
     renderPenaltyZone();
     document.getElementById('action-zone').classList.add('action-fadein');
     document.getElementById('penalty-zone').classList.add('action-fadein');
+    if (G.phase === 'correct' || G.phase === 'others-penalty') AUDIO.correct();
+    else if (G.phase === 'wrong') AUDIO.wrong();
   }, 1100);
 }
 
@@ -685,6 +690,7 @@ function offlineSkipPenalty() {
 }
 
 function offlineChallenge(targetIdx) {
+  AUDIO.challenge();
   G.challengerId = G.currentPlayerIndex;
   G.challengedIdx = targetIdx;
   G.currentPlayerIndex = targetIdx;
