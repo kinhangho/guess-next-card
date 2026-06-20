@@ -41,6 +41,17 @@ Three guess buttons: **Red** | **Black** | **Joker**
 
 ---
 
+## Challenge Mechanic
+
+On their turn (before guessing), the current player may tap **⚡ Challenge** to pick any other player and force them to guess instead.
+
+- **Challenged player guesses wrong** → they do the push-ups; the challenger's turn resumes from the new current card.
+- **Challenged player guesses right** → the challenger does **2 push-ups** and their turn ends (next player goes).
+
+The Challenge button is only shown during the guessing phase when it is the current player's turn and there are at least 2 players.
+
+---
+
 ## Outcomes
 
 ### Correct guess

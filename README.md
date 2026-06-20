@@ -11,6 +11,15 @@ A browser-based real-time multiplayer card guessing game — with a physical twi
    - **Face card showing** (J, Q, K): guess **Red**, **Black**, or **Joker**
 4. After a correct guess, choose to **Pass** (next player's turn) or **Continue** guessing.
 
+## Challenge
+
+Before guessing, tap **⚡ Challenge** to pick another player and make them guess for you.
+
+| Result | Consequence |
+|---|---|
+| Challenged player guesses **wrong** | They do the push-ups; your turn resumes |
+| Challenged player guesses **right** | You do 2 push-ups and lose your turn |
+
 ## Penalties
 
 | Outcome | Push-ups |
@@ -20,6 +29,7 @@ A browser-based real-time multiplayer card guessing game — with a physical twi
 | Same number **and** same color | 3 |
 | Correct Joker guess (others) | 2 each for all other players |
 | Wrong Joker guess / unexpected Joker | 2 for current player |
+| Lost a Challenge | 2 for the challenger |
 
 ## Deck (56 cards)
 
