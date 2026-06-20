@@ -32,6 +32,8 @@ const G = {
   message: null,
   peekCard: null,
   revealPause: false,
+  challengerId: null,  // index of player who issued the challenge
+  challengedIdx: null, // index of player being challenged (null = no challenge active)
 };
 
 // ── Action Dispatch ───────────────────────────────────────────────────────────
@@ -67,6 +69,17 @@ const ACTION = {
   closePeek() {
     if (MODE === 'online') socket.emit('close-peek', { roomId: currentRoomId });
     else offlineClosePeek();
+  },
+  challenge(targetIdx) {
+    if (MODE === 'online') socket.emit('challenge-player', { roomId: currentRoomId, targetIdx });
+    else offlineChallenge(targetIdx);
+  },
+  challengeGuess(choice) {
+    if (MODE === 'online') socket.emit('challenge-guess', { roomId: currentRoomId, choice });
+    else offlineChallengeGuess(choice);
+  },
+  cancelChallenge() {
+    document.getElementById('challenge-modal').classList.add('hidden');
   },
 };
 
@@ -106,6 +119,8 @@ function initSocket() {
     G.passAvailable      = room.passAvailable;
     G.message            = room.message;
     G.peekCard           = room.peekCard;
+    G.challengerId       = room.challengerId ?? null;
+    G.challengedIdx      = room.challengedIdx ?? null;
 
     const justResolved = prevPhase === 'guessing' &&
       (G.phase === 'correct' || G.phase === 'wrong' || G.phase === 'others-penalty') &&
@@ -323,6 +338,7 @@ function renderAll() {
   renderDeckCount();
   renderTurnBanner();
   renderFlipZone();
+  renderChallengeZone();
   renderWaitingBanner();
   renderGuessZone();
   renderActionZone();
@@ -396,10 +412,48 @@ function renderDeckCount() {
 }
 
 function renderTurnBanner() {
+  const banner = document.getElementById('turn-banner');
   const p = G.players[G.currentPlayerIndex];
   if (!p) return;
+  if (G.challengedIdx !== null) {
+    const challenger = G.players[G.challengerId];
+    banner.textContent = `⚡ ${challenger?.name ?? '?'} → ${p.name}`;
+    banner.classList.add('challenge-active');
+    return;
+  }
+  banner.classList.remove('challenge-active');
   const isMe = MODE === 'online' && G.currentPlayerIndex === myPlayerIndex;
-  document.getElementById('turn-banner').textContent = isMe ? `Your Turn (${p.name})` : `${p.name}'s Turn`;
+  banner.textContent = isMe ? `Your Turn (${p.name})` : `${p.name}'s Turn`;
+}
+
+function renderChallengeZone() {
+  const zone = document.getElementById('challenge-zone');
+  zone.innerHTML = '';
+  // Hide when not guessing, challenge already active, only 1 player, or not my turn
+  if (G.phase !== 'guessing' || G.challengedIdx !== null || G.players.length < 2) {
+    zone.classList.add('hidden'); return;
+  }
+  const activeIdx = MODE === 'online' ? myPlayerIndex : G.currentPlayerIndex;
+  if (activeIdx !== G.currentPlayerIndex) { zone.classList.add('hidden'); return; }
+  zone.classList.remove('hidden');
+  zone.appendChild(mkBtn('⚡ Challenge', 'btn btn-challenge', () => showChallengePicker()));
+}
+
+function showChallengePicker() {
+  const targets = document.getElementById('challenge-targets');
+  targets.innerHTML = '';
+  G.players.forEach((p, i) => {
+    if (i === G.currentPlayerIndex) return;
+    const btn = document.createElement('button');
+    btn.className = 'challenge-target-btn';
+    btn.innerHTML = `<span class="ct-name">${esc(p.name)}</span><span class="ct-pushups">${p.pushUps} 💪</span>`;
+    btn.onclick = () => {
+      document.getElementById('challenge-modal').classList.add('hidden');
+      ACTION.challenge(i);
+    };
+    targets.appendChild(btn);
+  });
+  document.getElementById('challenge-modal').classList.remove('hidden');
 }
 
 function renderFlipZone() {
@@ -428,14 +482,16 @@ function renderGuessZone() {
   if (MODE === 'online' && G.currentPlayerIndex !== myPlayerIndex) return;
   const card = G.currentCard;
   if (!card) return;
+  const isChallenge = G.challengedIdx !== null;
+  const guess = (choice) => isChallenge ? ACTION.challengeGuess(choice) : ACTION.guess(choice);
   if (card.type === 'number') {
-    zone.appendChild(mkBtn('▲ Higher', 'btn btn-higher', () => ACTION.guess('higher')));
-    zone.appendChild(mkBtn('▼ Lower',  'btn btn-lower',  () => ACTION.guess('lower')));
+    zone.appendChild(mkBtn('▲ Higher', 'btn btn-higher', () => guess('higher')));
+    zone.appendChild(mkBtn('▼ Lower',  'btn btn-lower',  () => guess('lower')));
   } else {
-    zone.appendChild(mkBtn('🔴 Red',   'btn btn-red',   () => ACTION.guess('red')));
-    zone.appendChild(mkBtn('⚫ Black', 'btn btn-black', () => ACTION.guess('black')));
+    zone.appendChild(mkBtn('🔴 Red',   'btn btn-red',   () => guess('red')));
+    zone.appendChild(mkBtn('⚫ Black', 'btn btn-black', () => guess('black')));
   }
-  zone.appendChild(mkBtn('🃏 Joker', 'btn btn-joker', () => ACTION.guess('joker')));
+  zone.appendChild(mkBtn('🃏 Joker', 'btn btn-joker', () => guess('joker')));
 }
 
 function renderActionZone() {
@@ -597,8 +653,15 @@ function offlineGuess(choice) {
 
 function offlineDonePenalty() {
   const passNext = G.passAfterPenalty;
+  // If challenged player just finished their penalty, return turn to challenger
+  const returnToChallenger = G.challengedIdx !== null;
   G.phase = 'guessing'; G.pendingPushUps = 0; G.drawnCard = null; G.passAfterPenalty = false;
-  if (passNext) G.currentPlayerIndex = (G.currentPlayerIndex + 1) % G.players.length;
+  if (returnToChallenger) {
+    G.currentPlayerIndex = G.challengerId;
+    G.challengerId = null; G.challengedIdx = null;
+  } else if (passNext) {
+    G.currentPlayerIndex = (G.currentPlayerIndex + 1) % G.players.length;
+  }
   clearMsg();
   if (G.deck.length === 0) { offlineEndGame(); return; }
   renderAll();
@@ -609,10 +672,84 @@ function offlineSkipPenalty() {
   p.healthCards.pop();
   p.pushUps -= G.pendingPushUps;
   const passNext = G.passAfterPenalty;
+  const returnToChallenger = G.challengedIdx !== null;
   G.pendingPushUps = 0; G.phase = 'guessing'; G.drawnCard = null; G.passAfterPenalty = false;
-  if (passNext) G.currentPlayerIndex = (G.currentPlayerIndex + 1) % G.players.length;
+  if (returnToChallenger) {
+    G.currentPlayerIndex = G.challengerId;
+    G.challengerId = null; G.challengedIdx = null;
+  } else if (passNext) {
+    G.currentPlayerIndex = (G.currentPlayerIndex + 1) % G.players.length;
+  }
   showMsg(`💚 Skip used! ${p.name} avoids the penalty.`, 'health');
   renderAll();
+}
+
+function offlineChallenge(targetIdx) {
+  G.challengerId = G.currentPlayerIndex;
+  G.challengedIdx = targetIdx;
+  G.currentPlayerIndex = targetIdx;
+  renderAll();
+}
+
+function offlineChallengeGuess(choice) {
+  if (G.deck.length === 0) { offlineEndGame(); return; }
+  const next = G.deck.shift();
+  G.drawnCard = next;
+
+  const challengerIdx   = G.challengerId;
+  const challengedName  = G.players[G.currentPlayerIndex].name;
+  const challengerName  = G.players[challengerIdx].name;
+
+  if (next.type === 'health') {
+    G.players[G.currentPlayerIndex].healthCards.push(next);
+    G.drawnCard = null;
+    showMsg(`💚 Health Card! ${challengedName} keeps a health card. Keep guessing!`, 'health');
+    renderScoreboard(); renderGuessZone();
+    return;
+  }
+
+  if (choice === 'joker') {
+    if (next.type === 'joker') {
+      G.sidePile.push(next);
+      G.currentCard = next;
+      G.challengedIdx = null; G.challengerId = null;
+      G.currentPlayerIndex = challengerIdx;
+      G.players[challengerIdx].pushUps += 2;
+      G.pendingPushUps = 2; G.phase = 'wrong'; G.passAfterPenalty = true;
+      showMsg(`🃏 Joker! ${challengedName} wins the challenge — ${challengerName} does 2 push-ups!`, 'correct');
+    } else {
+      G.players[G.currentPlayerIndex].pushUps += 2;
+      G.pendingPushUps = 2; G.currentCard = next;
+      G.phase = 'wrong'; G.passAfterPenalty = false;
+      showMsg(`❌ Not a Joker! ${cardNameStr(next)}. ${challengedName} does 2 push-ups!`, 'wrong');
+    }
+    triggerReveal(); return;
+  }
+
+  if (next.type === 'joker') {
+    G.sidePile.push(next);
+    G.players[G.currentPlayerIndex].pushUps += 2;
+    G.pendingPushUps = 2; G.phase = 'wrong'; G.passAfterPenalty = false;
+    showMsg(`🃏 Joker! ${challengedName} does 2 push-ups!`, 'wrong');
+    triggerReveal(); return;
+  }
+
+  const result = offlineEvaluate(choice, G.currentCard, next);
+  G.currentCard = next;
+  if (result.correct) {
+    // Challenged player won — challenger does 2 push-ups and loses their turn
+    G.challengedIdx = null; G.challengerId = null;
+    G.currentPlayerIndex = challengerIdx;
+    G.players[challengerIdx].pushUps += 2;
+    G.pendingPushUps = 2; G.phase = 'wrong'; G.passAfterPenalty = true;
+    showMsg(`✅ ${cardNameStr(next)} — ${challengedName} wins! ${challengerName} does 2 push-ups!`, 'correct');
+  } else {
+    // Challenged player wrong — they do push-ups, turn returns to challenger after Done
+    G.players[G.currentPlayerIndex].pushUps += result.pushUps;
+    G.pendingPushUps = result.pushUps; G.phase = 'wrong'; G.passAfterPenalty = false;
+    showMsg(`❌ ${result.reason ? result.reason + ' — ' : ''}${cardNameStr(next)}. ${challengedName} does ${result.pushUps} push-up${result.pushUps > 1 ? 's' : ''}!`, 'wrong');
+  }
+  triggerReveal();
 }
 
 function offlineConfirmOther(idx) {

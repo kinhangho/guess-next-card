@@ -146,6 +146,7 @@
   <!-- Action bar: all buttons live here, thumb-reach zone -->
   <div class="action-bar">
     <div id="flip-zone" class="btn-row"></div>
+    <div id="challenge-zone" class="btn-row hidden"></div>
     <div id="guess-zone" class="btn-row"></div>
     <div id="action-zone" class="btn-row hidden"></div>
     <div id="penalty-zone" class="penalty-zone hidden"></div>
@@ -154,6 +155,16 @@
   <!-- Side pile kept in DOM for JS, not shown on mobile -->
   <div id="side-pile" style="display:none"></div>
 
+</div>
+
+<!-- ── Challenge Picker Modal ── -->
+<div id="challenge-modal" class="modal hidden">
+  <div class="modal-box">
+    <h2>⚡ Challenge</h2>
+    <p>Pick a player to guess for you. If they're right, you do 2 push-ups.</p>
+    <div id="challenge-targets" class="challenge-targets"></div>
+    <button class="btn btn-outline btn-wide" style="margin-top:4px" onclick="ACTION.cancelChallenge()">Cancel</button>
+  </div>
 </div>
 
 <!-- ── Peek Modal ── -->
