@@ -81,5 +81,27 @@ const AUDIO = (() => {
     });
   }
 
-  return { cardFlip, correct, wrong, challenge };
+  // Deep thud for push-up number slam-in
+  function slam() {
+    const c = getCtx(), t = c.currentTime;
+    const osc = c.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(180, t);
+    osc.frequency.exponentialRampToValueAtTime(52, t + 0.22);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.42, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+    osc.connect(gain); gain.connect(c.destination);
+    osc.start(t); osc.stop(t + 0.29);
+    const click = c.createOscillator();
+    click.type = 'square';
+    click.frequency.value = 95;
+    const cg = c.createGain();
+    cg.gain.setValueAtTime(0.09, t);
+    cg.gain.exponentialRampToValueAtTime(0.001, t + 0.035);
+    click.connect(cg); cg.connect(c.destination);
+    click.start(t); click.stop(t + 0.04);
+  }
+
+  return { cardFlip, correct, wrong, challenge, slam };
 })();

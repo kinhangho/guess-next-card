@@ -9,6 +9,7 @@ if (IS_NATIVE) {
 
 // ── Mode & Online State ───────────────────────────────────────────────────────
 let MODE = 'offline';
+let penaltyRenderGen = 0;
 let socket = null;
 let myPlayerIndex = -1;
 let currentRoomId = null;
@@ -277,7 +278,7 @@ function selectCount(n, btn) {
 function startOfflineGame() {
   MODE = 'offline';
   const inputs = document.querySelectorAll('#name-inputs input');
-  G.players = [...inputs].map(inp => ({ name: inp.value.trim() || inp.placeholder, pushUps: 0, healthCards: [] }));
+  G.players = [...inputs].map(inp => ({ name: inp.value.trim() || inp.placeholder, pushUps: 0, healthCards: [], challengesIssued: 0 }));
   G.deck               = buildDeck();
   G.deckCount          = G.deck.length;
   G.currentPlayerIndex = 0;
@@ -522,13 +523,18 @@ function renderPenaltyZone() {
     const p = G.players[G.currentPlayerIndex];
     const n = G.pendingPushUps;
     zone.innerHTML = `
-      <div class="pushup-num">${n}×</div>
+      <div class="pushup-num slam-in">${n}×</div>
       <div class="pushup-label">${esc(p?.name ?? '')} — Push-Up${n > 1 ? 's' : ''}!</div>
     `;
+    AUDIO.slam();
     if (MODE === 'online' && G.currentPlayerIndex !== myPlayerIndex) return;
-    if (p?.healthCards.length > 0)
-      zone.appendChild(mkBtn('💚 Skip (use 1 health card)', 'btn btn-skip', () => ACTION.skipPenalty()));
-    zone.appendChild(mkBtn('Done ✓', 'btn btn-done', () => ACTION.donePenalty()));
+    const gen = ++penaltyRenderGen;
+    setTimeout(() => {
+      if (penaltyRenderGen !== gen) return;
+      if (p?.healthCards.length > 0)
+        zone.appendChild(mkBtn('💚 Skip (use 1 health card)', 'btn btn-skip', () => ACTION.skipPenalty()));
+      zone.appendChild(mkBtn('Done ✓', 'btn btn-done', () => ACTION.donePenalty()));
+    }, 550);
 
   } else if (G.phase === 'others-penalty') {
     if (G.penaltyQueue.length === 0) {
@@ -568,6 +574,28 @@ function renderSidePile() {
   const icons = G.sidePile.map(c => c.color === 'red' ? '🔴' : '⚫').join('');
   badge.textContent = `🃏 ${icons} out`;
   badge.classList.remove('hidden');
+}
+
+// ── Handoff & Challenge Splash helpers (offline only) ────────────────────────
+function showHandoff(name, sub, onReady) {
+  document.getElementById('handoff-name').textContent = name;
+  document.getElementById('handoff-sub').textContent = sub;
+  const btn = document.getElementById('handoff-ready-btn');
+  btn.onclick = () => {
+    document.getElementById('handoff-overlay').classList.add('hidden');
+    onReady();
+  };
+  document.getElementById('handoff-overlay').classList.remove('hidden');
+}
+
+function showChallengeSplash(challengerName) {
+  document.getElementById('splash-title').textContent = `⚡ ${challengerName} challenged you!`;
+  const btn = document.getElementById('challenge-accept-btn');
+  btn.onclick = () => {
+    document.getElementById('challenge-splash').classList.add('hidden');
+    renderAll();
+  };
+  document.getElementById('challenge-splash').classList.remove('hidden');
 }
 
 // ── Offline Game Logic ────────────────────────────────────────────────────────
@@ -658,7 +686,6 @@ function offlineGuess(choice) {
 
 function offlineDonePenalty() {
   const passNext = G.passAfterPenalty;
-  // If challenged player just finished their penalty, return turn to challenger
   const returnToChallenger = G.challengedIdx !== null;
   G.phase = 'guessing'; G.pendingPushUps = 0; G.drawnCard = null; G.passAfterPenalty = false;
   if (returnToChallenger) {
@@ -669,7 +696,13 @@ function offlineDonePenalty() {
   }
   clearMsg();
   if (G.deck.length === 0) { offlineEndGame(); return; }
-  renderAll();
+  if (returnToChallenger) {
+    showHandoff(G.players[G.currentPlayerIndex].name, '⚡ Back to you, challenger!', renderAll);
+  } else if (passNext) {
+    showHandoff(G.players[G.currentPlayerIndex].name, 'Your turn!', renderAll);
+  } else {
+    renderAll();
+  }
 }
 
 function offlineSkipPenalty() {
@@ -686,15 +719,27 @@ function offlineSkipPenalty() {
     G.currentPlayerIndex = (G.currentPlayerIndex + 1) % G.players.length;
   }
   showMsg(`💚 Skip used! ${p.name} avoids the penalty.`, 'health');
-  renderAll();
+  if (returnToChallenger) {
+    showHandoff(G.players[G.currentPlayerIndex].name, '⚡ Back to you, challenger!', renderAll);
+  } else if (passNext) {
+    showHandoff(G.players[G.currentPlayerIndex].name, 'Your turn!', renderAll);
+  } else {
+    renderAll();
+  }
 }
 
 function offlineChallenge(targetIdx) {
   AUDIO.challenge();
   G.challengerId = G.currentPlayerIndex;
+  G.players[G.challengerId].challengesIssued++;
   G.challengedIdx = targetIdx;
   G.currentPlayerIndex = targetIdx;
-  renderAll();
+  const challengerName = G.players[G.challengerId].name;
+  showHandoff(
+    G.players[targetIdx].name,
+    "⚡ You've been challenged!",
+    () => showChallengeSplash(challengerName)
+  );
 }
 
 function offlineChallengeGuess(choice) {
@@ -775,7 +820,7 @@ function offlinePass() {
   G.phase = 'guessing'; G.passAvailable = false; G.drawnCard = null;
   clearMsg();
   if (G.deck.length === 0) { offlineEndGame(); return; }
-  renderAll();
+  showHandoff(G.players[G.currentPlayerIndex].name, 'Your turn!', renderAll);
 }
 
 function offlineContinue() {
@@ -817,12 +862,21 @@ function offlineEndGame() {
 }
 
 function renderEndScreen() {
-  // Fewest push-ups wins
+  spawnConfetti();
+
+  const trophy = document.getElementById('end-trophy');
+  if (trophy) {
+    trophy.classList.remove('trophy-bounce');
+    void trophy.offsetWidth;
+    trophy.classList.add('trophy-bounce');
+  }
+
   const sorted = [...G.players].sort((a, b) => a.pushUps - b.pushUps);
   const minPU  = sorted[0]?.pushUps ?? 0;
   const isTie  = sorted.length > 1 && sorted[1].pushUps === minPU;
   document.getElementById('end-winner-name').textContent =
     isTie ? "It's a tie! 🤝" : `🎉 ${sorted[0]?.name ?? ''} wins!`;
+
   const el = document.getElementById('end-players');
   el.innerHTML = '';
   const medals = ['🥇','🥈','🥉'];
@@ -836,6 +890,52 @@ function renderEndScreen() {
     `;
     el.appendChild(div);
   });
+
+  const statsEl = document.getElementById('end-stats');
+  statsEl.innerHTML = '';
+  const total = G.players.reduce((s, p) => s + p.pushUps, 0);
+  const statItems = [];
+  if (total > 0) statItems.push({ icon: '📊', text: `${total} total push-ups across all players` });
+  if (G.players.length > 1) {
+    const maxPU = Math.max(...G.players.map(p => p.pushUps));
+    if (maxPU > 0) {
+      const hardest = G.players.filter(p => p.pushUps === maxPU).map(p => esc(p.name)).join(' &amp; ');
+      statItems.push({ icon: '🔥', text: `Hardest hit: ${hardest} (${maxPU} push-ups)` });
+    }
+  }
+  const maxChallenge = Math.max(...G.players.map(p => p.challengesIssued || 0));
+  if (maxChallenge > 0) {
+    const boldest = G.players.filter(p => (p.challengesIssued || 0) === maxChallenge).map(p => esc(p.name)).join(' &amp; ');
+    statItems.push({ icon: '⚡', text: `Most challenges issued: ${boldest} (${maxChallenge})` });
+  }
+  statItems.forEach(({ icon, text }) => {
+    const div = document.createElement('div');
+    div.className = 'end-stat';
+    div.innerHTML = `<span class="end-stat-icon">${icon}</span><span>${text}</span>`;
+    statsEl.appendChild(div);
+  });
+}
+
+function spawnConfetti() {
+  const container = document.getElementById('confetti-container');
+  if (!container) return;
+  container.innerHTML = '';
+  const colors = ['#F2AD00','#ef4444','#22c55e','#3b82f6','#a855f7','#ec4899','#f97316'];
+  for (let i = 0; i < 45; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    const size = 5 + Math.random() * 7;
+    piece.style.cssText = [
+      `left:${Math.random() * 100}%`,
+      `width:${size}px`,
+      `height:${size * (0.7 + Math.random() * 0.9)}px`,
+      `background:${colors[Math.floor(Math.random() * colors.length)]}`,
+      `border-radius:${Math.random() > 0.45 ? '50%' : '2px'}`,
+      `animation-duration:${1 + Math.random() * 1.6}s`,
+      `animation-delay:${Math.random() * 0.9}s`,
+    ].join(';');
+    container.appendChild(piece);
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
