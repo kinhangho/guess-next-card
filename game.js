@@ -3,6 +3,7 @@ const G = {
   players: [],            // { name, pushUps, healthCards }
   deck: [],
   currentCard: null,
+  lastGuess: null,
   currentPlayerIndex: 0,
   sidePile: [],           // jokers removed from play
   phase: 'guessing',      // guessing | correct | wrong | others-penalty
@@ -90,6 +91,7 @@ function startGame() {
   G.pendingPushUps    = 0;
   G.penaltyQueue      = [];
   G.passAvailable     = false;
+  G.lastGuess         = null;
 
   // First card must be a number or face card
   G.currentCard = drawStartCard();
@@ -116,6 +118,7 @@ function renderAll() {
   renderCard('next-card', null);
   renderDeckCount();
   renderTurnBanner();
+  renderResultIndicator();
   renderFlipZone();
   renderGuessZone();
   renderActionZone();
@@ -255,6 +258,42 @@ function renderPenaltyZone() {
   }
 }
 
+function renderResultIndicator() {
+  const labelCurrent = document.getElementById('label-current');
+  const labelNext    = document.getElementById('label-next');
+  const badge        = document.getElementById('result-badge');
+
+  if (G.phase === 'guessing') {
+    labelCurrent.textContent = 'Current Card';
+    labelNext.textContent    = 'Next Card';
+    badge.className = 'result-badge hidden';
+    badge.textContent = '';
+    return;
+  }
+
+  if (G.phase === 'others-penalty') {
+    labelCurrent.textContent = 'Current Card';
+    labelNext.textContent    = 'Joker Drawn';
+    badge.textContent = '✓ JOKER';
+    badge.className   = 'result-badge correct-badge';
+    return;
+  }
+
+  labelCurrent.textContent = 'Previous';
+  labelNext.textContent    = 'Drawn';
+
+  const labels = {
+    higher: 'HIGHER', lower: 'LOWER',
+    red: 'RED', black: 'BLACK', joker: 'JOKER',
+  };
+  const guessLabel = labels[G.lastGuess] ?? G.lastGuess.toUpperCase();
+  const correct = G.phase === 'correct';
+  badge.textContent = correct ? `✓ ${guessLabel}` : `✗ ${guessLabel}`;
+  badge.className = '';
+  void badge.offsetWidth; // force reflow to restart animation
+  badge.className = `result-badge ${correct ? 'correct-badge' : 'wrong-badge'}`;
+}
+
 function renderSidePile() {
   const el = document.getElementById('side-pile');
   el.innerHTML = '';
@@ -273,6 +312,8 @@ function renderSidePile() {
 // ── Guess Logic ────────────────────────────────────────────────────────────
 function guess(choice) {
   if (G.deck.length === 0) { showMsg('Deck is empty — game over!', 'info'); return; }
+
+  G.lastGuess = choice;
 
   const next = G.deck.shift();
   renderCard('next-card', next);
@@ -307,6 +348,7 @@ function guess(choice) {
     showMsg(`🃏 Joker drawn! ${p.name} does 2 push-ups! Joker goes to side pile.`, 'wrong');
     G.phase = 'wrong';
     renderScoreboard();
+    renderResultIndicator();
     renderGuessZone();
     renderActionZone();
     renderPenaltyZone();
@@ -336,6 +378,7 @@ function guess(choice) {
   }
 
   renderScoreboard();
+  renderResultIndicator();
   renderGuessZone();
   renderActionZone();
   renderPenaltyZone();
@@ -379,6 +422,7 @@ function handleJokerGuess(next) {
     showMsg(`❌ Not a Joker! ${cardName(next)}. ${p.name} does 2 push-ups!`, 'wrong');
   }
   renderScoreboard();
+  renderResultIndicator();
   renderGuessZone();
   renderActionZone();
   renderPenaltyZone();
