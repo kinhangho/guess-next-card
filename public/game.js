@@ -30,8 +30,7 @@ const G = {
   phase: 'guessing',
   pendingPushUps: 0,
   turnPushUps: 0,      // running push-up total for current player's turn (resets on turn change)
-  streakPunishment: 0, // push-ups built by choosing Continue; transfers to next player on Pass
-  inheritedPenalty: false, // true when current penalty was passed from previous player's streak
+  streakPunishment: 0, // global heat — grows on every Continue, paid by whoever gets it wrong
   penaltyQueue: [],    // indices of players still owing push-ups (joker-correct)
   passAfterPenalty: false, // if true, Done → next player instead of continue
   passAvailable: false,
@@ -389,7 +388,6 @@ function startOfflineGame() {
   G.lastGuess          = null;
   G.turnPushUps        = 0;
   G.streakPunishment   = 0;
-  G.inheritedPenalty   = false;
   G.message            = null;
   G.peekCard           = null;
   G.currentCard        = offlineDrawStartCard();
@@ -601,7 +599,7 @@ function renderGuessZone() {
   if (G.streakPunishment > 0) {
     const heat = document.createElement('div');
     heat.className = 'heat-banner';
-    heat.innerHTML = `<span class="heat-dice">${diceDisplay(G.streakPunishment)}</span><span class="heat-text">🔥 ${G.streakPunishment} push-up${G.streakPunishment > 1 ? 's' : ''} riding — pass it or keep building!</span>`;
+    heat.innerHTML = `<span class="heat-dice">${diceDisplay(G.streakPunishment)}</span><span class="heat-text">🔥 ${G.streakPunishment} heat — whoever gets it wrong pays this!</span>`;
     zone.appendChild(heat);
   }
   const isChallenge = G.challengedIdx !== null;
@@ -627,7 +625,7 @@ function renderActionZone() {
   if (G.streakPunishment > 0) {
     const heat = document.createElement('div');
     heat.className = 'heat-banner';
-    heat.innerHTML = `<span class="heat-dice">${diceDisplay(G.streakPunishment)}</span><span class="heat-text">🔥 Pass → next player does ${G.streakPunishment} push-up${G.streakPunishment > 1 ? 's' : ''} · Continue → raise to ${next}</span>`;
+    heat.innerHTML = `<span class="heat-dice">${diceDisplay(G.streakPunishment)}</span><span class="heat-text">🔥 ${G.streakPunishment} heat riding · Continue → ${next} · whoever gets it wrong pays!</span>`;
     zone.appendChild(heat);
   }
   if (G.passAvailable) zone.appendChild(mkBtn('Pass ➡', 'btn btn-pass', () => ACTION.pass()));
@@ -657,7 +655,6 @@ function renderPenaltyZone() {
     const n = G.pendingPushUps;
     const dice = diceDisplay(G.turnPushUps);
     zone.innerHTML = `
-      ${G.inheritedPenalty ? `<div class="inherited-label">🔥 Passed from previous player!</div>` : ''}
       ${dice ? `<div class="dice-row">${dice}</div>` : ''}
       <div class="pushup-num slam-in">${n}×</div>
       <div class="pushup-label">${esc(p?.name ?? '')} — Push-Up${n > 1 ? 's' : ''}!</div>
@@ -804,13 +801,15 @@ function offlineGuess(choice) {
       showMsg(`🃏 Joker! Correct! All other players do 2 push-ups!`, 'correct');
       G.phase = 'others-penalty';
     } else {
-      // Wrong joker guess — 2 push-ups, drawn card becomes current, next player's turn
+      // Wrong joker guess — 2 push-ups + heat, drawn card becomes current, next player's turn
       const p = G.players[G.currentPlayerIndex];
-      p.pushUps += 2; G.pendingPushUps = 2; G.turnPushUps += 2;
+      const heat = G.streakPunishment; G.streakPunishment = 0;
+      const total = 2 + heat;
+      p.pushUps += total; G.pendingPushUps = total; G.turnPushUps += total;
       G.currentCard = next;
       G.phase = 'wrong';
       G.passAfterPenalty = true;
-      showMsg(`❌ Not a Joker! ${cardNameStr(next)}. ${p.name} does 2 push-ups!`, 'wrong');
+      showMsg(`❌ Not a Joker! ${cardNameStr(next)}. ${p.name} does ${total} push-up${total > 1 ? 's' : ''}${heat > 0 ? ` (🔥 +${heat} heat)` : ''}!`, 'wrong');
     }
     triggerReveal();
     return;
@@ -820,10 +819,12 @@ function offlineGuess(choice) {
   if (next.type === 'joker') {
     G.sidePile.push(next);
     const p = G.players[G.currentPlayerIndex];
-    p.pushUps += 2; G.pendingPushUps = 2; G.turnPushUps += 2;
+    const heat = G.streakPunishment; G.streakPunishment = 0;
+    const total = 2 + heat;
+    p.pushUps += total; G.pendingPushUps = total; G.turnPushUps += total;
     G.phase = 'wrong';
     G.passAfterPenalty = true;
-    showMsg(`🃏 Joker drawn! ${p.name} does 2 push-ups!`, 'wrong');
+    showMsg(`🃏 Joker drawn! ${p.name} does ${total} push-up${total > 1 ? 's' : ''}${heat > 0 ? ` (🔥 +${heat} heat)` : ''}!`, 'wrong');
     triggerReveal();
     return;
   }
@@ -837,12 +838,14 @@ function offlineGuess(choice) {
     showMsg(`✅ Correct! ${cardNameStr(next)}`, 'correct');
   } else {
     const p = G.players[G.currentPlayerIndex];
-    p.pushUps += result.pushUps;
-    G.pendingPushUps = result.pushUps; G.turnPushUps += result.pushUps;
+    const heat = G.streakPunishment; G.streakPunishment = 0;
+    const total = result.pushUps + heat;
+    p.pushUps += total;
+    G.pendingPushUps = total; G.turnPushUps += total;
     G.currentCard = next;
     G.phase = 'wrong';
     G.passAfterPenalty = false;
-    showMsg(`❌ ${result.reason ? result.reason + ' — ' : ''}${cardNameStr(next)}. ${p.name} does ${result.pushUps} push-up${result.pushUps > 1 ? 's' : ''}!`, 'wrong');
+    showMsg(`❌ ${result.reason ? result.reason + ' — ' : ''}${cardNameStr(next)}. ${p.name} does ${total} push-up${total > 1 ? 's' : ''}${heat > 0 ? ` (🔥 +${heat} heat)` : ''}!`, 'wrong');
   }
   triggerReveal();
 }
@@ -850,8 +853,7 @@ function offlineGuess(choice) {
 function offlineDonePenalty() {
   const passNext = G.passAfterPenalty;
   const returnToChallenger = G.challengedIdx !== null;
-  G.phase = 'guessing'; G.pendingPushUps = 0; G.drawnCard = null;
-  G.passAfterPenalty = false; G.inheritedPenalty = false;
+  G.phase = 'guessing'; G.pendingPushUps = 0; G.drawnCard = null; G.passAfterPenalty = false;
   if (returnToChallenger) {
     G.currentPlayerIndex = G.challengerId;
     G.challengerId = null; G.challengedIdx = null;
@@ -878,8 +880,7 @@ function offlineSkipPenalty() {
   G.turnPushUps = Math.max(0, G.turnPushUps - G.pendingPushUps);
   const passNext = G.passAfterPenalty;
   const returnToChallenger = G.challengedIdx !== null;
-  G.pendingPushUps = 0; G.phase = 'guessing'; G.drawnCard = null;
-  G.passAfterPenalty = false; G.inheritedPenalty = false;
+  G.pendingPushUps = 0; G.phase = 'guessing'; G.drawnCard = null; G.passAfterPenalty = false;
   if (returnToChallenger) {
     G.currentPlayerIndex = G.challengerId;
     G.challengerId = null; G.challengedIdx = null;
@@ -940,7 +941,7 @@ function offlineChallengeGuess(choice) {
       G.challengedIdx = null; G.challengerId = null;
       G.currentPlayerIndex = challengerIdx;
       G.players[challengerIdx].pushUps += 3;
-      G.pendingPushUps = 3; G.turnPushUps = 3; G.phase = 'wrong'; G.passAfterPenalty = true;
+      G.pendingPushUps = 3; G.turnPushUps = 3; G.streakPunishment = 0; G.phase = 'wrong'; G.passAfterPenalty = true;
       showMsg(`🃏 Joker! ${challengedName} wins the challenge — ${challengerName} does 3 push-ups!`, 'correct');
     } else {
       // Challenged wrong (guessed joker, not joker) — always 1 push-up, challenger's turn resumes
@@ -968,7 +969,7 @@ function offlineChallengeGuess(choice) {
     G.challengedIdx = null; G.challengerId = null;
     G.currentPlayerIndex = challengerIdx;
     G.players[challengerIdx].pushUps += 3;
-    G.pendingPushUps = 3; G.turnPushUps = 3; G.phase = 'wrong'; G.passAfterPenalty = true;
+    G.pendingPushUps = 3; G.turnPushUps = 3; G.streakPunishment = 0; G.phase = 'wrong'; G.passAfterPenalty = true;
     showMsg(`✅ ${cardNameStr(next)} — ${challengedName} wins! ${challengerName} does 3 push-ups!`, 'correct');
   } else {
     // Challenged player wrong — always 1 push-up, turn returns to challenger after Done
@@ -992,27 +993,13 @@ function offlineFinishOthersPenalty() {
 }
 
 function offlinePass() {
-  const streak = G.streakPunishment;
-  G.streakPunishment = 0;
   G.currentPlayerIndex = (G.currentPlayerIndex + 1) % G.players.length;
   G.phase = 'guessing'; G.passAvailable = false; G.drawnCard = null; G.turnPushUps = 0;
   clearMsg();
   if (G.deck.length === 0) { offlineEndGame(); return; }
-  const sub = streak > 0
-    ? `🔥 ${streak} push-up${streak > 1 ? 's' : ''} incoming from previous player!`
-    : 'Your turn!';
-  showHandoff(G.players[G.currentPlayerIndex].name, sub, () => {
-    if (streak > 0) {
-      const p = G.players[G.currentPlayerIndex];
-      p.pushUps += streak;
-      G.pendingPushUps = streak;
-      G.turnPushUps = streak;
-      G.phase = 'wrong';
-      G.inheritedPenalty = true;
-      G.passAfterPenalty = false;
-    }
-    renderAll();
-  });
+  const heat = G.streakPunishment;
+  const sub = heat > 0 ? `🔥 ${heat} heat riding — get it wrong and you pay!` : 'Your turn!';
+  showHandoff(G.players[G.currentPlayerIndex].name, sub, renderAll);
 }
 
 function offlineContinue() {
