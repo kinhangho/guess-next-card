@@ -41,14 +41,17 @@ Three guess buttons: **Red** | **Black** | **Joker**
 
 ---
 
-## Challenge Mechanic
+## Result Indicator
 
-On their turn (before guessing), the current player may tap **⚡ Challenge** to pick any other player and force them to guess instead.
+After each guess, the card area updates to show the comparison clearly:
 
-- **Challenged player guesses wrong** → they do the push-ups; the challenger's turn resumes from the new current card.
-- **Challenged player guesses right** → the challenger does **2 push-ups** and their turn ends (next player goes).
+- The left card label changes from **Current Card** to **Previous**.
+- The right card label changes from **Next Card** to **Drawn**.
+- A pill badge animates in between the cards: **✓ HIGHER**, **✗ RED**, **✓ JOKER**, etc.
+- For a correct Joker guess, the left label stays **Current Card** and right shows **Joker Drawn**.
+- When the player presses Pass, Continue, or Done, the labels reset and the badge disappears.
 
-The Challenge button is only shown during the guessing phase when it is the current player's turn and there are at least 2 players.
+The badge animation replays on every reveal (including consecutive same-outcome guesses) via a forced reflow.
 
 ---
 
@@ -70,18 +73,16 @@ The Challenge button is only shown during the guessing phase when it is the curr
 
 ## Health Cards
 
-Health cards sit in the deck and are drawn like any other card. When drawn, **no matter what the player guessed**, the player receives the health card and may keep it or use it at any time.
+Health cards sit in the deck and are drawn like any other card. When drawn, **no matter what the player guessed**, the player receives the health card. The current card does not change; play continues from the same card.
 
-### Holding 1 health card
-- Player gets a **Skip** button.
-- Using Skip avoids any push-up penalty once.
-- The health card is permanently removed from the game after use.
+### Holding 1 or 2 health cards (penalty phase)
+- A **Skip** button appears in the penalty zone when the player owes push-ups.
+- Using Skip cancels the pending push-ups and permanently removes 1 health card from the game.
 
-### Holding 2 health cards
-- Player gets a **Use** button.
-- Pressing Use reveals two options:
-  - **Skip −1**: same as the single-card Skip (consumes 1 health card).
-  - **Flip −2**: peeks at the next card as a tip, but costs 2 health cards (both returned to the pool at a random position).
+### Holding 2 health cards (guessing phase)
+- A **Flip −2** button appears above the guess buttons.
+- Pressing it reveals the next card as a peek without drawing it.
+- Both health cards are shuffled back into the remaining deck at random positions.
 
 ---
 
@@ -101,7 +102,18 @@ Health cards sit in the deck and are drawn like any other card. When drawn, **no
 
 ## Scoreboard
 
-Displayed live for all players throughout the game. (Scoring details TBD — push-up counts or point system to be defined.)
+Displayed live for all players throughout the game. Each player entry shows their name and cumulative push-up count. The active player is highlighted. Health card icons (💚) are shown per card held.
+
+---
+
+## Challenge Mechanic (multiplayer / online build only)
+
+On their turn (before guessing), the current player may tap **⚡ Challenge** to pick any other player and force them to guess instead.
+
+- **Challenged player guesses wrong** → they do the push-ups; the challenger's turn resumes from the new current card.
+- **Challenged player guesses right** → the challenger does **2 push-ups** and their turn ends (next player goes).
+
+The Challenge button is only shown during the guessing phase when there are at least 2 players. **Not implemented in the offline (pass-the-phone) build.**
 
 ---
 

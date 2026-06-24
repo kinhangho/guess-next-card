@@ -1,24 +1,16 @@
 # Guess Next Card
 
-A browser-based real-time multiplayer card guessing game — with a physical twist: wrong guesses mean push-ups.
+A pass-the-phone card game — wrong guesses mean push-ups.
 
 ## How to Play
 
-1. Pick **2–10 players** on the start screen.
+1. Pick **2–10 players** on the start screen and enter names.
 2. Hit **Start** — a card is dealt face-up to begin.
 3. On your turn, guess what the next drawn card will be:
    - **Number card showing** (A, 2–10): guess **Higher**, **Lower**, or **Joker**
    - **Face card showing** (J, Q, K): guess **Red**, **Black**, or **Joker**
-4. After a correct guess, choose to **Pass** (next player's turn) or **Continue** guessing.
-
-## Challenge
-
-Before guessing, tap **⚡ Challenge** to pick another player and make them guess for you.
-
-| Result | Consequence |
-|---|---|
-| Challenged player guesses **wrong** | They do the push-ups; your turn resumes |
-| Challenged player guesses **right** | You do 2 push-ups and lose your turn |
+4. After the card is revealed, the labels show **Previous → Drawn** and a result badge (✓ / ✗) confirms your guess.
+5. Correct guess → choose **Pass** (next player's turn) or **Continue** guessing.
 
 ## Penalties
 
@@ -27,9 +19,8 @@ Before guessing, tap **⚡ Challenge** to pick another player and make them gues
 | Wrong guess | 1 — keep guessing until correct |
 | Same number as current card | 2 |
 | Same number **and** same color | 3 |
-| Correct Joker guess (others) | 2 each for all other players |
-| Wrong Joker guess / unexpected Joker | 2 for current player |
-| Lost a Challenge | 2 for the challenger |
+| Correct Joker guess → all other players | 2 each |
+| Wrong Joker guess / unexpected Joker → current player | 2 |
 
 ## Deck (56 cards)
 
@@ -41,21 +32,25 @@ Card ranks: A=1, 2–10, J=11, Q=12, K=13
 
 ## Health Cards
 
-Drawn from the deck like any other card — penalty is waived when drawn.
+Drawn from the deck like any other card — no penalty when drawn; play continues from the same card.
 
 | Cards held | Ability |
 |---|---|
-| 1 | **Skip** — avoid one push-up penalty (card removed from game) |
-| 2 | **Skip −1** (same as above) **or Flip −2** — peek at the next card, but both health cards return to the deck at random |
+| 1 or 2 | **Skip** — appears when you owe push-ups; uses 1 health card to cancel the penalty (card removed from game) |
+| 2 | **Flip −2** — appears before guessing; peeks at the next card, but both health cards are shuffled back into the deck |
 
 ## Jokers
 
-- Correct Joker guess → all **other** players do 2 push-ups; Joker is set aside; current player continues from the previous card.
-- Wrong Joker guess (or Joker drawn unexpectedly) → current player does 2 push-ups; Joker is set aside; play continues normally.
+- **Correct Joker guess** → all other players do 2 push-ups each; Joker is set aside; current player continues from the same card.
+- **Wrong Joker guess** (or Joker drawn unexpectedly) → current player does 2 push-ups; Joker is set aside; play continues normally.
+
+## Scoreboard
+
+Tracks each player's push-up count live throughout the game.
 
 ## Tech Stack
 
-- **Backend**: Node.js + Express + Socket.IO (real-time multiplayer)
+- **Backend**: Node.js + Express + Socket.IO
 - **Frontend**: Vanilla HTML / CSS / JS
 - **Mobile**: Capacitor (iOS)
 
