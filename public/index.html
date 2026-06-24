@@ -231,6 +231,18 @@
   </div>
 </div>
 
+<!-- ── Avatar Picker Sheet ── -->
+<div id="avatar-sheet" class="modal avatar-sheet-modal hidden" onclick="if(this===event.target)closeAvatarSheet()">
+  <div class="avatar-sheet-box">
+    <div class="avatar-sheet-title">Choose Avatar</div>
+    <button class="btn btn-outline btn-wide" type="button" onclick="triggerAvatarFile()">📷 Photo / Camera</button>
+    <div class="emoji-grid-label">Or pick an icon</div>
+    <div class="emoji-grid" id="emoji-grid"></div>
+    <button class="btn btn-ghost btn-wide" type="button" onclick="closeAvatarSheet()" style="margin-top:4px">Cancel</button>
+  </div>
+</div>
+<input type="file" id="avatar-file-input" accept="image/*" onchange="handleAvatarFile(this)" style="display:none">
+
 <!-- ── Handoff Overlay ── -->
 <div id="handoff-overlay" class="fullscreen-overlay hidden">
   <div class="overlay-content">

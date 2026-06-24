@@ -352,6 +352,81 @@ body {
   width: 100%;
 }
 #name-inputs { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+
+/* Player setup row: avatar circle + name input side by side */
+.player-setup-row { display: flex; align-items: center; gap: 10px; width: 100%; }
+.player-setup-row input { flex: 1; min-width: 0; }
+
+/* Avatar button in setup screen */
+.av-btn {
+  width: 54px; height: 54px;
+  border-radius: 50%;
+  border: 2px dashed var(--border-hi);
+  background: var(--surface-2);
+  font-size: 1.9rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color .18s, transform .1s;
+  padding: 0;
+  background-size: cover; background-position: center;
+}
+.av-btn:active { transform: scale(.93); }
+.av-btn.has-photo { border-style: solid; border-color: var(--gold); }
+
+/* Small avatar circle — scoreboard chip, challenge picker */
+.av-sm {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  font-size: 1.15rem;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; flex-shrink: 0;
+  background-size: cover; background-position: center;
+}
+
+/* Avatar picker bottom sheet */
+.avatar-sheet-modal { align-items: flex-end; }
+.avatar-sheet-box {
+  background: var(--surface-2);
+  border: 1.5px solid var(--border-hi);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  padding: 24px 20px max(36px, env(safe-area-inset-bottom));
+  width: 100%; max-width: 480px;
+  display: flex; flex-direction: column; align-items: stretch; gap: 8px;
+  max-height: 82vh; overflow-y: auto;
+}
+.avatar-sheet-title {
+  font-family: var(--font-display);
+  font-size: 1.3rem; font-weight: 900;
+  color: var(--text-hi); text-align: center;
+  margin-bottom: 4px;
+}
+.emoji-grid-label {
+  font-size: 0.72rem; text-transform: uppercase;
+  letter-spacing: 1.2px; color: var(--text-lo);
+  margin-top: 6px;
+}
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+.emoji-opt {
+  aspect-ratio: 1;
+  border-radius: var(--r-md);
+  background: var(--surface-3);
+  border: 2px solid transparent;
+  font-size: 1.55rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color .12s, transform .1s;
+  padding: 0;
+}
+.emoji-opt:active { transform: scale(.88); }
+.emoji-opt.selected { border-color: var(--gold); background: var(--gold-dim); }
+
 #name-inputs input {
   padding: 11px 16px;
   border-radius: var(--r-md);
@@ -566,6 +641,7 @@ body {
 }
 .challenge-target-btn:hover  { border-color: #7C3AED; background: rgba(124,58,237,.12); transform: translateY(-2px); }
 .challenge-target-btn:active { transform: scale(0.97); }
+.challenge-target-btn .av-sm { width: 42px; height: 42px; font-size: 1.6rem; }
 .ct-name   { font-weight: 700; font-size: 0.88rem; color: var(--text-hi); }
 .ct-pushups {
   font-family: var(--font-display);

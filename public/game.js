@@ -252,6 +252,86 @@ function renderPublicRooms(list) {
   });
 }
 
+// ── Avatar helpers ────────────────────────────────────────────────────────────
+const PLAYER_DEFAULT_EMOJIS = ['🦁','🐼','🦊','🐸','🐨','🐙','🦋','🐶','🐱','🐻'];
+const EMOJI_AVATAR_LIST = [
+  '🦁','🐯','🦊','🐼','🐸','🐨','🐙','🦋','🐶','🐱',
+  '🐻','🦄','🦅','🤖','👻','🔥','⚡','🌈','🎮','🏆',
+  '🎯','🎲','💎','🚀','🌙','⭐','🍀','🎭','🐲','🦸',
+];
+let setupAvatars = {};     // { 1: '🦁', 2: 'data:image/...', ... }
+let avatarEditingIdx = null;
+
+function avatarHTML(avatar, cls) {
+  if (!avatar) return `<div class="${cls}"></div>`;
+  if (avatar.startsWith('data:')) {
+    return `<div class="${cls}" style="background-image:url('${avatar}');background-size:cover;background-position:center;font-size:0"></div>`;
+  }
+  return `<div class="${cls}">${avatar}</div>`;
+}
+
+function openAvatarPicker(idx) {
+  avatarEditingIdx = idx;
+  // Populate emoji grid once
+  const grid = document.getElementById('emoji-grid');
+  if (!grid.children.length) {
+    EMOJI_AVATAR_LIST.forEach(em => {
+      const b = document.createElement('button');
+      b.className = 'emoji-opt'; b.textContent = em; b.type = 'button';
+      b.onclick = () => pickAvatarEmoji(em);
+      grid.appendChild(b);
+    });
+  }
+  // Highlight current selection
+  const cur = setupAvatars[idx] ?? '';
+  grid.querySelectorAll('.emoji-opt').forEach(b => b.classList.toggle('selected', b.textContent === cur));
+  document.getElementById('avatar-sheet').classList.remove('hidden');
+}
+
+function closeAvatarSheet() {
+  document.getElementById('avatar-sheet').classList.add('hidden');
+  avatarEditingIdx = null;
+}
+
+function pickAvatarEmoji(emoji) {
+  if (avatarEditingIdx === null) return;
+  setupAvatars[avatarEditingIdx] = emoji;
+  _refreshAvBtn(avatarEditingIdx);
+  closeAvatarSheet();
+}
+
+function triggerAvatarFile() {
+  document.getElementById('avatar-file-input').click();
+}
+
+function handleAvatarFile(input) {
+  const file = input.files[0];
+  if (!file || avatarEditingIdx === null) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    setupAvatars[avatarEditingIdx] = e.target.result;
+    _refreshAvBtn(avatarEditingIdx);
+    closeAvatarSheet();
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function _refreshAvBtn(idx) {
+  const btn = document.getElementById(`av-btn-${idx}`);
+  if (!btn) return;
+  const av = setupAvatars[idx] ?? '';
+  if (av.startsWith('data:')) {
+    btn.textContent = '';
+    btn.style.backgroundImage = `url('${av}')`;
+    btn.classList.add('has-photo');
+  } else {
+    btn.style.backgroundImage = '';
+    btn.textContent = av;
+    btn.classList.remove('has-photo');
+  }
+}
+
 // ── Offline: Setup ────────────────────────────────────────────────────────────
 function initOfflineSetup() {
   const row = document.getElementById('count-row');
@@ -270,18 +350,29 @@ function selectCount(n, btn) {
   const sec = document.getElementById('name-section');
   const inp = document.getElementById('name-inputs');
   inp.innerHTML = '';
+  setupAvatars = {};
   sec.classList.remove('hidden');
   for (let i = 1; i <= n; i++) {
-    const input = document.createElement('input');
-    input.type = 'text'; input.placeholder = `Player ${i}`; input.value = `Player ${i}`; input.id = `pname-${i}`;
-    inp.appendChild(input);
+    const emoji = PLAYER_DEFAULT_EMOJIS[i - 1] || '😀';
+    setupAvatars[i] = emoji;
+    const row = document.createElement('div');
+    row.className = 'player-setup-row';
+    row.innerHTML = `
+      <button class="av-btn" id="av-btn-${i}" type="button" onclick="openAvatarPicker(${i})">${emoji}</button>
+      <input type="text" placeholder="Player ${i}" value="Player ${i}" id="pname-${i}" />
+    `;
+    inp.appendChild(row);
   }
 }
 
 function startOfflineGame() {
   MODE = 'offline';
   const inputs = document.querySelectorAll('#name-inputs input');
-  G.players = [...inputs].map(inp => ({ name: inp.value.trim() || inp.placeholder, pushUps: 0, healthCards: [], challengesIssued: 0 }));
+  G.players = [...inputs].map((inp, i) => ({
+    name: inp.value.trim() || inp.placeholder,
+    avatar: setupAvatars[i + 1] ?? PLAYER_DEFAULT_EMOJIS[i] ?? '😀',
+    pushUps: 0, healthCards: [], challengesIssued: 0,
+  }));
   G.deck               = buildDeck();
   G.deckCount          = G.deck.length;
   G.currentPlayerIndex = 0;
@@ -393,6 +484,7 @@ function renderScoreboard() {
     div.className = 'player-entry' + (i === G.currentPlayerIndex ? ' active' : '');
     const isMe = MODE === 'online' && i === myPlayerIndex;
     div.innerHTML = `
+      ${avatarHTML(p.avatar ?? '', 'av-sm')}
       <div class="pname">${esc(p.name)}${isMe ? ' <span class="pme">(you)</span>' : ''}</div>
       <div class="pstats"><span class="pi">💪</span><span class="pn">${p.pushUps}</span></div>
       ${p.healthCards.length ? `<div class="phealth">${'💚'.repeat(p.healthCards.length)}</div>` : ''}
@@ -441,7 +533,8 @@ function renderTurnBanner() {
   }
   banner.classList.remove('challenge-active');
   const isMe = MODE === 'online' && G.currentPlayerIndex === myPlayerIndex;
-  banner.textContent = isMe ? `Your Turn (${p.name})` : `${p.name}'s Turn`;
+  const avPrefix = (p.avatar && !p.avatar.startsWith('data:')) ? `${p.avatar} ` : '';
+  banner.textContent = isMe ? `Your Turn (${p.name})` : `${avPrefix}${p.name}'s Turn`;
 }
 
 function renderChallengeZone() {
@@ -464,7 +557,7 @@ function showChallengePicker() {
     if (i === G.currentPlayerIndex) return;
     const btn = document.createElement('button');
     btn.className = 'challenge-target-btn';
-    btn.innerHTML = `<span class="ct-name">${esc(p.name)}</span><span class="ct-pushups">${p.pushUps} 💪</span>`;
+    btn.innerHTML = `${avatarHTML(p.avatar ?? '', 'av-sm')}<span class="ct-name">${esc(p.name)}</span><span class="ct-pushups">${p.pushUps} 💪</span>`;
     btn.onclick = () => {
       document.getElementById('challenge-modal').classList.add('hidden');
       ACTION.challenge(i);
