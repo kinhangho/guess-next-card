@@ -29,6 +29,7 @@ const G = {
   // phases: guessing | correct | wrong | others-penalty | ended
   phase: 'guessing',
   pendingPushUps: 0,
+  turnPushUps: 0,      // running push-up total for current player's turn (resets on turn change)
   penaltyQueue: [],    // indices of players still owing push-ups (joker-correct)
   passAfterPenalty: false, // if true, Done → next player instead of continue
   passAvailable: false,
@@ -293,6 +294,7 @@ function startOfflineGame() {
   G.drawnCard          = null;
   G.revealFrom         = null;
   G.lastGuess          = null;
+  G.turnPushUps        = 0;
   G.message            = null;
   G.peekCard           = null;
   G.currentCard        = offlineDrawStartCard();
@@ -521,6 +523,15 @@ function renderActionZone() {
   zone.appendChild(mkBtn('Continue ▶', 'btn btn-continue', () => ACTION.continuePlay()));
 }
 
+function diceDisplay(n) {
+  const faces = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+  if (n <= 0) return '';
+  const parts = [];
+  let rem = n;
+  while (rem > 0) { const v = Math.min(rem, 6); parts.push(faces[v - 1]); rem -= v; }
+  return parts.join(' ');
+}
+
 function renderPenaltyZone() {
   const zone = document.getElementById('penalty-zone');
   zone.innerHTML = '';
@@ -532,7 +543,9 @@ function renderPenaltyZone() {
     zone.classList.remove('hidden');
     const p = G.players[G.currentPlayerIndex];
     const n = G.pendingPushUps;
+    const dice = diceDisplay(G.turnPushUps);
     zone.innerHTML = `
+      ${dice ? `<div class="dice-row">${dice}</div>` : ''}
       <div class="pushup-num slam-in">${n}×</div>
       <div class="pushup-label">${esc(p?.name ?? '')} — Push-Up${n > 1 ? 's' : ''}!</div>
     `;
@@ -680,7 +693,7 @@ function offlineGuess(choice) {
     } else {
       // Wrong joker guess — 2 push-ups, drawn card becomes current, next player's turn
       const p = G.players[G.currentPlayerIndex];
-      p.pushUps += 2; G.pendingPushUps = 2;
+      p.pushUps += 2; G.pendingPushUps = 2; G.turnPushUps += 2;
       G.currentCard = next;
       G.phase = 'wrong';
       G.passAfterPenalty = true;
@@ -694,7 +707,7 @@ function offlineGuess(choice) {
   if (next.type === 'joker') {
     G.sidePile.push(next);
     const p = G.players[G.currentPlayerIndex];
-    p.pushUps += 2; G.pendingPushUps = 2;
+    p.pushUps += 2; G.pendingPushUps = 2; G.turnPushUps += 2;
     G.phase = 'wrong';
     G.passAfterPenalty = true;
     showMsg(`🃏 Joker drawn! ${p.name} does 2 push-ups!`, 'wrong');
@@ -712,7 +725,7 @@ function offlineGuess(choice) {
   } else {
     const p = G.players[G.currentPlayerIndex];
     p.pushUps += result.pushUps;
-    G.pendingPushUps = result.pushUps;
+    G.pendingPushUps = result.pushUps; G.turnPushUps += result.pushUps;
     G.currentCard = next;
     G.phase = 'wrong';
     G.passAfterPenalty = false;
@@ -728,8 +741,10 @@ function offlineDonePenalty() {
   if (returnToChallenger) {
     G.currentPlayerIndex = G.challengerId;
     G.challengerId = null; G.challengedIdx = null;
+    G.turnPushUps = 0;
   } else if (passNext) {
     G.currentPlayerIndex = (G.currentPlayerIndex + 1) % G.players.length;
+    G.turnPushUps = 0;
   }
   clearMsg();
   if (G.deck.length === 0) { offlineEndGame(); return; }
@@ -746,14 +761,17 @@ function offlineSkipPenalty() {
   const p = G.players[G.currentPlayerIndex];
   p.healthCards.pop();
   p.pushUps -= G.pendingPushUps;
+  G.turnPushUps = Math.max(0, G.turnPushUps - G.pendingPushUps);
   const passNext = G.passAfterPenalty;
   const returnToChallenger = G.challengedIdx !== null;
   G.pendingPushUps = 0; G.phase = 'guessing'; G.drawnCard = null; G.passAfterPenalty = false;
   if (returnToChallenger) {
     G.currentPlayerIndex = G.challengerId;
     G.challengerId = null; G.challengedIdx = null;
+    G.turnPushUps = 0;
   } else if (passNext) {
     G.currentPlayerIndex = (G.currentPlayerIndex + 1) % G.players.length;
+    G.turnPushUps = 0;
   }
   showMsg(`💚 Skip used! ${p.name} avoids the penalty.`, 'health');
   if (returnToChallenger) {
@@ -767,6 +785,7 @@ function offlineSkipPenalty() {
 
 function offlineChallenge(targetIdx) {
   AUDIO.challenge();
+  G.turnPushUps = 0;
   G.challengerId = G.currentPlayerIndex;
   G.players[G.challengerId].challengesIssued++;
   G.challengedIdx = targetIdx;
@@ -800,44 +819,47 @@ function offlineChallengeGuess(choice) {
 
   if (choice === 'joker') {
     if (next.type === 'joker') {
+      // Challenged won (correct joker) — challenger does 3 push-ups and loses their turn
       G.sidePile.push(next);
       G.currentCard = next;
       G.challengedIdx = null; G.challengerId = null;
       G.currentPlayerIndex = challengerIdx;
-      G.players[challengerIdx].pushUps += 2;
-      G.pendingPushUps = 2; G.phase = 'wrong'; G.passAfterPenalty = true;
-      showMsg(`🃏 Joker! ${challengedName} wins the challenge — ${challengerName} does 2 push-ups!`, 'correct');
+      G.players[challengerIdx].pushUps += 3;
+      G.pendingPushUps = 3; G.turnPushUps = 3; G.phase = 'wrong'; G.passAfterPenalty = true;
+      showMsg(`🃏 Joker! ${challengedName} wins the challenge — ${challengerName} does 3 push-ups!`, 'correct');
     } else {
-      G.players[G.currentPlayerIndex].pushUps += 2;
-      G.pendingPushUps = 2; G.currentCard = next;
+      // Challenged wrong (guessed joker, not joker) — always 1 push-up, challenger's turn resumes
+      G.players[G.currentPlayerIndex].pushUps += 1;
+      G.pendingPushUps = 1; G.turnPushUps += 1; G.currentCard = next;
       G.phase = 'wrong'; G.passAfterPenalty = false;
-      showMsg(`❌ Not a Joker! ${cardNameStr(next)}. ${challengedName} does 2 push-ups!`, 'wrong');
+      showMsg(`❌ Not a Joker! ${cardNameStr(next)}. ${challengedName} does 1 push-up!`, 'wrong');
     }
     triggerReveal(); return;
   }
 
   if (next.type === 'joker') {
+    // Surprise joker during challenge — challenged does 1 push-up, challenger's turn resumes
     G.sidePile.push(next);
-    G.players[G.currentPlayerIndex].pushUps += 2;
-    G.pendingPushUps = 2; G.phase = 'wrong'; G.passAfterPenalty = false;
-    showMsg(`🃏 Joker! ${challengedName} does 2 push-ups!`, 'wrong');
+    G.players[G.currentPlayerIndex].pushUps += 1;
+    G.pendingPushUps = 1; G.turnPushUps += 1; G.phase = 'wrong'; G.passAfterPenalty = false;
+    showMsg(`🃏 Joker drawn! ${challengedName} does 1 push-up!`, 'wrong');
     triggerReveal(); return;
   }
 
   const result = offlineEvaluate(choice, G.currentCard, next);
   G.currentCard = next;
   if (result.correct) {
-    // Challenged player won — challenger does 2 push-ups and loses their turn
+    // Challenged player won — challenger does 3 push-ups and loses their turn
     G.challengedIdx = null; G.challengerId = null;
     G.currentPlayerIndex = challengerIdx;
-    G.players[challengerIdx].pushUps += 2;
-    G.pendingPushUps = 2; G.phase = 'wrong'; G.passAfterPenalty = true;
-    showMsg(`✅ ${cardNameStr(next)} — ${challengedName} wins! ${challengerName} does 2 push-ups!`, 'correct');
+    G.players[challengerIdx].pushUps += 3;
+    G.pendingPushUps = 3; G.turnPushUps = 3; G.phase = 'wrong'; G.passAfterPenalty = true;
+    showMsg(`✅ ${cardNameStr(next)} — ${challengedName} wins! ${challengerName} does 3 push-ups!`, 'correct');
   } else {
-    // Challenged player wrong — they do push-ups, turn returns to challenger after Done
-    G.players[G.currentPlayerIndex].pushUps += result.pushUps;
-    G.pendingPushUps = result.pushUps; G.phase = 'wrong'; G.passAfterPenalty = false;
-    showMsg(`❌ ${result.reason ? result.reason + ' — ' : ''}${cardNameStr(next)}. ${challengedName} does ${result.pushUps} push-up${result.pushUps > 1 ? 's' : ''}!`, 'wrong');
+    // Challenged player wrong — always 1 push-up, turn returns to challenger after Done
+    G.players[G.currentPlayerIndex].pushUps += 1;
+    G.pendingPushUps = 1; G.turnPushUps += 1; G.phase = 'wrong'; G.passAfterPenalty = false;
+    showMsg(`❌ ${cardNameStr(next)}. ${challengedName} does 1 push-up!`, 'wrong');
   }
   triggerReveal();
 }
@@ -856,7 +878,7 @@ function offlineFinishOthersPenalty() {
 
 function offlinePass() {
   G.currentPlayerIndex = (G.currentPlayerIndex + 1) % G.players.length;
-  G.phase = 'guessing'; G.passAvailable = false; G.drawnCard = null;
+  G.phase = 'guessing'; G.passAvailable = false; G.drawnCard = null; G.turnPushUps = 0;
   clearMsg();
   if (G.deck.length === 0) { offlineEndGame(); return; }
   showHandoff(G.players[G.currentPlayerIndex].name, 'Your turn!', renderAll);

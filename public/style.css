@@ -727,6 +727,16 @@ body {
   border: 2px solid var(--fire);
   border-radius: var(--r-lg);
 }
+.penalty-zone .dice-row {
+  font-size: 2.6rem;
+  line-height: 1;
+  letter-spacing: 6px;
+  animation: dice-pop .32s cubic-bezier(.34,1.4,.64,1) both;
+}
+@keyframes dice-pop {
+  from { transform: scale(.4) rotate(-15deg); opacity: 0; }
+  to   { transform: scale(1)  rotate(0deg);   opacity: 1; }
+}
 .penalty-zone .pushup-num {
   font-family: var(--font-display);
   font-size: 4.5rem;
