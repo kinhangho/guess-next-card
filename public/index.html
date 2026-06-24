@@ -130,12 +130,15 @@
       <div id="turn-banner" class="turn-banner"></div>
       <div class="table-area">
         <div class="card-station">
-          <div class="card-label">Current</div>
+          <div class="card-label" id="label-current">Current</div>
           <div id="current-card" class="card"></div>
         </div>
-        <div class="versus">▶</div>
+        <div class="versus-col">
+          <div class="versus">▶</div>
+          <div id="result-badge" class="result-badge hidden"></div>
+        </div>
         <div class="card-station">
-          <div class="card-label">Next</div>
+          <div class="card-label" id="label-next">Next</div>
           <div id="next-card" class="card back">?</div>
         </div>
       </div>

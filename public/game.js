@@ -22,6 +22,8 @@ const G = {
   deckCount: 0,
   currentCard: null,
   drawnCard: null,
+  revealFrom: null,    // card in the left slot before the guess (so both slots differ during reveal)
+  lastGuess: null,     // the guess choice for the result badge
   currentPlayerIndex: 0,
   sidePile: [],
   // phases: guessing | correct | wrong | others-penalty | ended
@@ -289,6 +291,8 @@ function startOfflineGame() {
   G.passAfterPenalty   = false;
   G.passAvailable      = false;
   G.drawnCard          = null;
+  G.revealFrom         = null;
+  G.lastGuess          = null;
   G.message            = null;
   G.peekCard           = null;
   G.currentCard        = offlineDrawStartCard();
@@ -336,10 +340,12 @@ function offlineDrawStartCard() {
 // ── Render (shared) ───────────────────────────────────────────────────────────
 function renderAll() {
   renderScoreboard();
-  renderCard('current-card', G.currentCard);
+  const leftCard = (G.revealPause && G.revealFrom) ? G.revealFrom : G.currentCard;
+  renderCard('current-card', leftCard);
   renderCard('next-card', G.revealPause ? G.drawnCard : null);
   renderDeckCount();
   renderTurnBanner();
+  renderResultIndicator();
   renderFlipZone();
   renderChallengeZone();
   renderWaitingBanner();
@@ -361,6 +367,10 @@ function triggerReveal() {
   nextEl.classList.add('reveal-anim');
   setTimeout(() => {
     G.revealPause = false;
+    G.revealFrom  = null;
+    G.lastGuess   = null;
+    renderCard('current-card', G.currentCard);
+    renderResultIndicator();
     renderCard('next-card', null);
     renderActionZone();
     renderPenaltyZone();
@@ -564,6 +574,31 @@ function renderPenaltyZone() {
   }
 }
 
+function renderResultIndicator() {
+  const labelCurrent = document.getElementById('label-current');
+  const labelNext    = document.getElementById('label-next');
+  const badge        = document.getElementById('result-badge');
+
+  if (!G.revealPause) {
+    labelCurrent.textContent = 'Current';
+    labelNext.textContent    = 'Next';
+    badge.className = 'result-badge hidden';
+    badge.textContent = '';
+    return;
+  }
+
+  labelCurrent.textContent = 'Previous';
+  labelNext.textContent    = 'Drawn';
+
+  const guessMap = { higher: 'HIGHER', lower: 'LOWER', red: 'RED', black: 'BLACK', joker: 'JOKER' };
+  const guessLabel = guessMap[G.lastGuess] ?? '';
+  const correct = G.phase === 'correct' || G.phase === 'others-penalty';
+  badge.textContent = correct ? `✓ ${guessLabel}` : `✗ ${guessLabel}`;
+  badge.className = '';
+  void badge.offsetWidth;
+  badge.className = `result-badge ${correct ? 'correct-badge' : 'wrong-badge'}`;
+}
+
 function renderSidePile() {
   const badge = document.getElementById('joker-status');
   if (!badge) return;
@@ -617,6 +652,8 @@ function offlineEvaluate(choice, current, next) {
 
 function offlineGuess(choice) {
   if (G.deck.length === 0) { offlineEndGame(); return; }
+  G.revealFrom = G.currentCard;
+  G.lastGuess  = choice;
   const next = G.deck.shift();
   G.drawnCard = next;
 
@@ -744,6 +781,8 @@ function offlineChallenge(targetIdx) {
 
 function offlineChallengeGuess(choice) {
   if (G.deck.length === 0) { offlineEndGame(); return; }
+  G.revealFrom = G.currentCard;
+  G.lastGuess  = choice;
   const next = G.deck.shift();
   G.drawnCard = next;
 

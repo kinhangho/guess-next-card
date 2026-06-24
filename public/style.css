@@ -594,9 +594,38 @@ body {
   color: rgba(255,255,255,.35);
   font-weight: 700;
 }
+.versus-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
 .versus {
   font-size: 1.8rem;
   color: rgba(255,255,255,.15);
+}
+.result-badge {
+  padding: 5px 13px;
+  border-radius: 100px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  animation: badge-pop .22s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes badge-pop {
+  from { transform: scale(.7); opacity: 0; }
+  to   { transform: scale(1);  opacity: 1; }
+}
+.result-badge.correct-badge {
+  background: var(--correct-dim);
+  border: 1.5px solid var(--correct);
+  color: var(--correct);
+}
+.result-badge.wrong-badge {
+  background: var(--fire-dim);
+  border: 1.5px solid var(--fire);
+  color: var(--fire);
 }
 
 /* ── Cards ── */
