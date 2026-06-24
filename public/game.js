@@ -395,6 +395,48 @@ function startOfflineGame() {
   renderAll();
 }
 
+// ── Game Menu ─────────────────────────────────────────────────────────────────
+function openGameMenu() {
+  document.getElementById('game-menu').classList.remove('hidden');
+}
+
+function closeGameMenu() {
+  document.getElementById('game-menu').classList.add('hidden');
+}
+
+function resetOfflineGame() {
+  closeGameMenu();
+  const players = G.players.map(p => ({ name: p.name, avatar: p.avatar }));
+  G.players            = players.map(p => ({ ...p, pushUps: 0, healthCards: [], challengesIssued: 0 }));
+  G.deck               = buildDeck();
+  G.deckCount          = G.deck.length;
+  G.currentPlayerIndex = 0;
+  G.sidePile           = [];
+  G.phase              = 'guessing';
+  G.pendingPushUps     = 0;
+  G.penaltyQueue       = [];
+  G.passAfterPenalty   = false;
+  G.passAvailable      = false;
+  G.drawnCard          = null;
+  G.revealFrom         = null;
+  G.lastGuess          = null;
+  G.turnPushUps        = 0;
+  G.streakPunishment   = 0;
+  G.message            = null;
+  G.peekCard           = null;
+  G.challengerId       = null;
+  G.challengedIdx      = null;
+  G.revealPause        = false;
+  G.currentCard        = offlineDrawStartCard();
+  clearMsg();
+  renderAll();
+}
+
+function quitToHome() {
+  closeGameMenu();
+  showScreen('home-screen');
+}
+
 // ── Deck helpers ──────────────────────────────────────────────────────────────
 function buildDeck() {
   const suits  = ['♠','♥','♦','♣'];

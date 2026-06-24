@@ -594,6 +594,57 @@ body {
   font-weight: 700;
   letter-spacing: 0.5px;
 }
+.menu-btn {
+  width: 34px; height: 34px;
+  border-radius: var(--r-sm);
+  background: rgba(255,255,255,.07);
+  border: 1.5px solid var(--border-hi);
+  color: var(--text-mid);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s;
+  flex-shrink: 0;
+}
+.menu-btn:active { background: rgba(255,255,255,.14); color: var(--text-hi); }
+
+/* ── Game menu bottom sheet ── */
+.game-menu-modal { align-items: flex-end; }
+.game-menu-box {
+  background: var(--surface-2);
+  border: 1.5px solid var(--border-hi);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  padding: 24px 20px max(36px, env(safe-area-inset-bottom));
+  width: 100%; max-width: 480px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.game-menu-title {
+  font-family: var(--font-display);
+  font-size: 1.2rem; font-weight: 900;
+  color: var(--text-lo);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-align: center;
+  margin-bottom: 4px;
+}
+.game-menu-item {
+  width: 100%;
+  padding: 16px 20px;
+  border-radius: var(--r-md);
+  background: var(--surface-3);
+  border: 1.5px solid transparent;
+  color: var(--text-hi);
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-align: left;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.game-menu-item:active { background: rgba(255,255,255,.1); border-color: var(--border-hi); }
+.game-menu-quit { color: var(--fire); }
+.game-menu-quit:active { border-color: var(--fire); }
 
 /* ── Turn banner ── */
 .turn-banner {

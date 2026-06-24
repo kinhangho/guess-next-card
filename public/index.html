@@ -127,6 +127,7 @@
         <div style="display:flex;gap:6px;align-items:center">
           <span id="joker-status" class="deck-badge hidden"></span>
           <span id="deck-count" class="deck-badge">56 cards</span>
+          <button class="menu-btn" onclick="openGameMenu()" aria-label="Menu">☰</button>
         </div>
       </div>
       <div id="turn-banner" class="turn-banner"></div>
@@ -228,6 +229,17 @@
       </div>
     </div>
     <button class="btn btn-gold btn-wide" onclick="document.getElementById('how-to-play-modal').classList.add('hidden')">Got it!</button>
+  </div>
+</div>
+
+<!-- ── Game Menu Sheet ── -->
+<div id="game-menu" class="modal game-menu-modal hidden" onclick="if(this===event.target)closeGameMenu()">
+  <div class="game-menu-box">
+    <div class="game-menu-title">Menu</div>
+    <button class="game-menu-item" onclick="closeGameMenu()">▶ Resume</button>
+    <button class="game-menu-item" onclick="resetOfflineGame()">↺ Reset Game</button>
+    <button class="game-menu-item" onclick="closeGameMenu();document.getElementById('how-to-play-modal').classList.remove('hidden')">📖 How to Play</button>
+    <button class="game-menu-item game-menu-quit" onclick="quitToHome()">✕ Quit to Main</button>
   </div>
 </div>
 
