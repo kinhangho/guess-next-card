@@ -803,6 +803,33 @@ body {
   border: 2px solid var(--fire);
   border-radius: var(--r-lg);
 }
+/* ── Heat streak banner ── */
+.heat-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  background: rgba(249, 115, 22, .13);
+  border: 1.5px solid #F97316;
+  border-radius: var(--r-md);
+  width: 100%;
+  animation: heat-pulse 2s ease-in-out infinite;
+}
+@keyframes heat-pulse {
+  0%, 100% { border-color: #F97316; }
+  50%       { border-color: #EF4444; box-shadow: 0 0 8px rgba(239,68,68,.3); }
+}
+.heat-dice { font-size: 1.4rem; letter-spacing: 4px; }
+.heat-text { font-size: 0.75rem; font-weight: 700; color: #FB923C; line-height: 1.35; }
+
+/* ── Inherited penalty label ── */
+.inherited-label {
+  font-size: 0.78rem; font-weight: 800;
+  color: #FB923C;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
 .penalty-zone .dice-row {
   font-size: 2.6rem;
   line-height: 1;

@@ -30,6 +30,8 @@ const G = {
   phase: 'guessing',
   pendingPushUps: 0,
   turnPushUps: 0,      // running push-up total for current player's turn (resets on turn change)
+  streakPunishment: 0, // push-ups built by choosing Continue; transfers to next player on Pass
+  inheritedPenalty: false, // true when current penalty was passed from previous player's streak
   penaltyQueue: [],    // indices of players still owing push-ups (joker-correct)
   passAfterPenalty: false, // if true, Done → next player instead of continue
   passAvailable: false,
@@ -386,6 +388,8 @@ function startOfflineGame() {
   G.revealFrom         = null;
   G.lastGuess          = null;
   G.turnPushUps        = 0;
+  G.streakPunishment   = 0;
+  G.inheritedPenalty   = false;
   G.message            = null;
   G.peekCard           = null;
   G.currentCard        = offlineDrawStartCard();
@@ -593,6 +597,13 @@ function renderGuessZone() {
   if (MODE === 'online' && G.currentPlayerIndex !== myPlayerIndex) return;
   const card = G.currentCard;
   if (!card) return;
+  // Heat indicator — shows when player has built up a streak from Continue's
+  if (G.streakPunishment > 0) {
+    const heat = document.createElement('div');
+    heat.className = 'heat-banner';
+    heat.innerHTML = `<span class="heat-dice">${diceDisplay(G.streakPunishment)}</span><span class="heat-text">🔥 ${G.streakPunishment} push-up${G.streakPunishment > 1 ? 's' : ''} riding — pass it or keep building!</span>`;
+    zone.appendChild(heat);
+  }
   const isChallenge = G.challengedIdx !== null;
   const guess = (choice) => isChallenge ? ACTION.challengeGuess(choice) : ACTION.guess(choice);
   if (card.type === 'number') {
@@ -612,8 +623,16 @@ function renderActionZone() {
   if (G.revealPause || G.phase !== 'correct') { zone.classList.add('hidden'); return; }
   if (MODE === 'online' && G.currentPlayerIndex !== myPlayerIndex) { zone.classList.add('hidden'); return; }
   zone.classList.remove('hidden');
+  const next = G.streakPunishment + 1;
+  if (G.streakPunishment > 0) {
+    const heat = document.createElement('div');
+    heat.className = 'heat-banner';
+    heat.innerHTML = `<span class="heat-dice">${diceDisplay(G.streakPunishment)}</span><span class="heat-text">🔥 Pass → next player does ${G.streakPunishment} push-up${G.streakPunishment > 1 ? 's' : ''} · Continue → raise to ${next}</span>`;
+    zone.appendChild(heat);
+  }
   if (G.passAvailable) zone.appendChild(mkBtn('Pass ➡', 'btn btn-pass', () => ACTION.pass()));
-  zone.appendChild(mkBtn('Continue ▶', 'btn btn-continue', () => ACTION.continuePlay()));
+  const contLabel = G.streakPunishment > 0 ? `Continue ▶ (+1 🔥 → ${next})` : 'Continue ▶';
+  zone.appendChild(mkBtn(contLabel, 'btn btn-continue', () => ACTION.continuePlay()));
 }
 
 function diceDisplay(n) {
@@ -638,6 +657,7 @@ function renderPenaltyZone() {
     const n = G.pendingPushUps;
     const dice = diceDisplay(G.turnPushUps);
     zone.innerHTML = `
+      ${G.inheritedPenalty ? `<div class="inherited-label">🔥 Passed from previous player!</div>` : ''}
       ${dice ? `<div class="dice-row">${dice}</div>` : ''}
       <div class="pushup-num slam-in">${n}×</div>
       <div class="pushup-label">${esc(p?.name ?? '')} — Push-Up${n > 1 ? 's' : ''}!</div>
@@ -830,14 +850,15 @@ function offlineGuess(choice) {
 function offlineDonePenalty() {
   const passNext = G.passAfterPenalty;
   const returnToChallenger = G.challengedIdx !== null;
-  G.phase = 'guessing'; G.pendingPushUps = 0; G.drawnCard = null; G.passAfterPenalty = false;
+  G.phase = 'guessing'; G.pendingPushUps = 0; G.drawnCard = null;
+  G.passAfterPenalty = false; G.inheritedPenalty = false;
   if (returnToChallenger) {
     G.currentPlayerIndex = G.challengerId;
     G.challengerId = null; G.challengedIdx = null;
-    G.turnPushUps = 0;
+    G.turnPushUps = 0; G.streakPunishment = 0;
   } else if (passNext) {
     G.currentPlayerIndex = (G.currentPlayerIndex + 1) % G.players.length;
-    G.turnPushUps = 0;
+    G.turnPushUps = 0; G.streakPunishment = 0;
   }
   clearMsg();
   if (G.deck.length === 0) { offlineEndGame(); return; }
@@ -857,14 +878,15 @@ function offlineSkipPenalty() {
   G.turnPushUps = Math.max(0, G.turnPushUps - G.pendingPushUps);
   const passNext = G.passAfterPenalty;
   const returnToChallenger = G.challengedIdx !== null;
-  G.pendingPushUps = 0; G.phase = 'guessing'; G.drawnCard = null; G.passAfterPenalty = false;
+  G.pendingPushUps = 0; G.phase = 'guessing'; G.drawnCard = null;
+  G.passAfterPenalty = false; G.inheritedPenalty = false;
   if (returnToChallenger) {
     G.currentPlayerIndex = G.challengerId;
     G.challengerId = null; G.challengedIdx = null;
-    G.turnPushUps = 0;
+    G.turnPushUps = 0; G.streakPunishment = 0;
   } else if (passNext) {
     G.currentPlayerIndex = (G.currentPlayerIndex + 1) % G.players.length;
-    G.turnPushUps = 0;
+    G.turnPushUps = 0; G.streakPunishment = 0;
   }
   showMsg(`💚 Skip used! ${p.name} avoids the penalty.`, 'health');
   if (returnToChallenger) {
@@ -970,14 +992,31 @@ function offlineFinishOthersPenalty() {
 }
 
 function offlinePass() {
+  const streak = G.streakPunishment;
+  G.streakPunishment = 0;
   G.currentPlayerIndex = (G.currentPlayerIndex + 1) % G.players.length;
   G.phase = 'guessing'; G.passAvailable = false; G.drawnCard = null; G.turnPushUps = 0;
   clearMsg();
   if (G.deck.length === 0) { offlineEndGame(); return; }
-  showHandoff(G.players[G.currentPlayerIndex].name, 'Your turn!', renderAll);
+  const sub = streak > 0
+    ? `🔥 ${streak} push-up${streak > 1 ? 's' : ''} incoming from previous player!`
+    : 'Your turn!';
+  showHandoff(G.players[G.currentPlayerIndex].name, sub, () => {
+    if (streak > 0) {
+      const p = G.players[G.currentPlayerIndex];
+      p.pushUps += streak;
+      G.pendingPushUps = streak;
+      G.turnPushUps = streak;
+      G.phase = 'wrong';
+      G.inheritedPenalty = true;
+      G.passAfterPenalty = false;
+    }
+    renderAll();
+  });
 }
 
 function offlineContinue() {
+  G.streakPunishment++;
   G.phase = 'guessing'; G.passAvailable = false; G.drawnCard = null;
   clearMsg();
   if (G.deck.length === 0) { offlineEndGame(); return; }
