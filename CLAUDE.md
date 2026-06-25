@@ -24,6 +24,8 @@ Card ranks: A=1, 2–10, J=11, Q=12, K=13
 ## Setup
 
 - Player selection screen: user picks **2–10 players** before the game starts.
+- Each player enters a name and chooses an avatar (emoji or camera photo).
+- A **Punishment Picker** appears after player names — choose from 6 presets or a custom word (see Punishment Picker section).
 - UI shows: scoreboard for all players + remaining undrawn cards.
 - A **Start** button deals the first random card to begin the game.
 
@@ -61,13 +63,13 @@ The badge animation replays on every reveal (including consecutive same-outcome 
 - Player may choose to **Pass** (end their turn, next player goes) or **Continue** guessing.
 
 ### Wrong guess
-- Player does **1 push-up** and must keep guessing until correct.
+- Player does **1 rep** of the chosen punishment and must keep guessing until correct.
 
 ### Same number as current card
-- Player does **2 push-ups** (regardless of guess).
+- Player does **2 reps** (regardless of guess).
 
 ### Same number AND same color as current card
-- Player does **3 push-ups** (regardless of guess).
+- Player does **3 reps** (regardless of guess).
 
 ---
 
@@ -76,8 +78,8 @@ The badge animation replays on every reveal (including consecutive same-outcome 
 Health cards sit in the deck and are drawn like any other card. When drawn, **no matter what the player guessed**, the player receives the health card. The current card does not change; play continues from the same card.
 
 ### Holding 1 or 2 health cards (penalty phase)
-- A **Skip** button appears in the penalty zone when the player owes push-ups.
-- Using Skip cancels the pending push-ups and permanently removes 1 health card from the game.
+- A **Skip** button appears in the penalty zone when the player owes reps.
+- Using Skip cancels the pending reps and permanently removes 1 health card from the game.
 
 ### Holding 2 health cards (guessing phase)
 - A **Flip −2** button appears above the guess buttons.
@@ -89,12 +91,12 @@ Health cards sit in the deck and are drawn like any other card. When drawn, **no
 ## Joker Cards
 
 ### Player guesses "Joker" and is CORRECT
-- All **other** players do **2 push-ups** each; a **Done** button appears for them to confirm.
+- All **other** players do **2 reps** each; a **Done** button appears for them to confirm.
 - The Joker card is set aside (out of play).
 - The current player continues guessing from the **previous card** (not the Joker).
 
 ### Player guesses "Joker" and is INCORRECT (or draws Joker unexpectedly)
-- The **current player** does **2 push-ups**; a **Done** button appears.
+- The **current player** does **2 reps**; a **Done** button appears.
 - After pressing Done, the Joker is placed **to the side** (out of play).
 - Play continues normally.
 
@@ -102,7 +104,7 @@ Health cards sit in the deck and are drawn like any other card. When drawn, **no
 
 ## Scoreboard
 
-Displayed live for all players throughout the game. Each player entry shows their avatar, name, and cumulative push-up count. The active player is highlighted. Health card icons (💚) are shown per card held.
+Displayed live for all players throughout the game. Each player entry shows their avatar, name, and cumulative penalty count (with the chosen punishment icon). The active player is highlighted. Health card icons (💚) are shown per card held.
 
 ---
 
@@ -122,14 +124,14 @@ Each time the current player presses **Continue** (guessing again after a correc
 
 - The heat is shown as a 🔥 banner in the guess zone and action zone.
 - Heat carries across player turns on Pass — it is **not reset** when the turn passes.
-- Whoever next **gets a guess wrong** pays their normal push-up penalty **plus all accumulated heat**, and the heat resets to 0.
+- Whoever next **gets a guess wrong** pays their normal penalty **plus all accumulated heat**, and the heat resets to 0.
 - Heat also resets when a challenge ends the turn involuntarily (challenger penalised or challenged player penalised and turn passes).
 
 ---
 
-## Dice Push-up Display
+## Dice Display
 
-When a player owes push-ups, the penalty zone shows Unicode dice faces (⚀–⚅) representing the **cumulative push-ups this turn** (`G.turnPushUps`) alongside the current penalty count. Multiple dice stack when the total exceeds 6.
+When a player owes reps, the penalty zone shows Unicode dice faces (⚀–⚅) representing the **cumulative reps this turn** (`G.turnPushUps`) alongside the current penalty count. Multiple dice stack when the total exceeds 6.
 
 ---
 
@@ -137,8 +139,8 @@ When a player owes push-ups, the penalty zone shows Unicode dice faces (⚀–�
 
 On their turn (before guessing), the current player may tap **⚡ Challenge** to pick any other player and force them to guess instead.
 
-- **Challenged player guesses wrong** → they do **1 push-up** (always, regardless of same-rank/color); the challenger's turn resumes from the new current card.
-- **Challenged player guesses right** → the challenger does **3 push-ups** and their turn ends (next player goes).
+- **Challenged player guesses wrong** → they do **1 rep** (always, regardless of same-rank/color); the challenger's turn resumes from the new current card.
+- **Challenged player guesses right** → the challenger does **3 reps** and their turn ends (next player goes).
 
 The Challenge button is shown during the guessing phase when there are at least 2 players. Implemented in both offline and online builds.
 
@@ -148,9 +150,35 @@ The Challenge button is shown during the guessing phase when there are at least 
 
 A **☰** button in the game top-bar opens a bottom sheet with:
 - **▶ Resume** — dismisses the menu, game continues.
-- **↺ Reset Game** — keeps player names and avatars, resets all push-up scores, deals a fresh 56-card deck. Player 1 starts.
+- **↺ Reset Game** — keeps player names, avatars, and punishment type; resets all penalty scores; deals a fresh 56-card deck. Player 1 starts.
 - **📖 How to Play** — opens the rules modal.
 - **✕ Quit to Main** — returns to the home screen.
+
+---
+
+---
+
+## Punishment Picker
+
+Before the game starts, players choose what the punishment is. Options:
+
+| id | Icon | Singular | Plural |
+|----|------|----------|--------|
+| `pushups` | 💪 | push-up | push-ups |
+| `situps` | 🏋️ | sit-up | sit-ups |
+| `squats` | 🦵 | squat | squats |
+| `sips` | 🍺 | sip | sips |
+| `plank` | ⏱️ | sec plank | sec plank |
+| `custom` | ✏️ | *(user input)* | *(input + "s")* |
+
+### Implementation
+- `PUNISHMENT_PRESETS` array holds the presets; `selectedPunishId` (module-level `let`) tracks the current selection.
+- `renderPunishmentPicker()` renders chip buttons into `#punishment-picker`; "Custom…" reveals `#custom-punish-row` with a text input.
+- `readPunishment()` is called inside `startOfflineGame()` and writes `G.punishSingular`, `G.punishPlural`, `G.punishIcon`.
+- `punish(n)` helper returns `G.punishSingular` when `n === 1`, else `G.punishPlural`.
+- `updateHTPPunishment()` patches `.htp-ps` / `.htp-pp` spans in the HTP modal, plus `#challenge-modal-sub` and `#challenge-splash-sub` text — called once at game start.
+- Punishment is **preserved** (not reset) by `resetOfflineGame()`.
+- Punishment picker is **offline-only**; online mode always uses the default push-up labels.
 
 ---
 

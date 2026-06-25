@@ -39,6 +39,10 @@ const G = {
   revealPause: false,
   challengerId: null,  // index of player who issued the challenge
   challengedIdx: null, // index of player being challenged (null = no challenge active)
+  // punishment (set at game start from picker, preserved across Reset)
+  punishSingular: 'push-up',
+  punishPlural:   'push-ups',
+  punishIcon:     '💪',
 };
 
 // ── Action Dispatch ───────────────────────────────────────────────────────────
@@ -253,6 +257,47 @@ function renderPublicRooms(list) {
   });
 }
 
+// ── Punishment picker ─────────────────────────────────────────────────────────
+const PUNISHMENT_PRESETS = [
+  { id: 'pushups', icon: '💪', label: 'Push-ups',    s: 'push-up',    p: 'push-ups' },
+  { id: 'situps',  icon: '🏋️', label: 'Sit-ups',     s: 'sit-up',     p: 'sit-ups' },
+  { id: 'squats',  icon: '🦵', label: 'Squats',       s: 'squat',      p: 'squats' },
+  { id: 'sips',    icon: '🍺', label: 'Sips',         s: 'sip',        p: 'sips' },
+  { id: 'plank',   icon: '⏱️', label: 'Sec. Plank',   s: 'sec plank',  p: 'sec plank' },
+  { id: 'custom',  icon: '✏️', label: 'Custom…',      s: null,         p: null },
+];
+let selectedPunishId = 'pushups';
+let customPunishText = '';
+
+function renderPunishmentPicker() {
+  const picker = document.getElementById('punishment-picker');
+  if (!picker) return;
+  picker.innerHTML = '';
+  PUNISHMENT_PRESETS.forEach(preset => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'punish-chip' + (preset.id === selectedPunishId ? ' selected' : '');
+    btn.textContent = `${preset.icon} ${preset.label}`;
+    btn.onclick = () => {
+      selectedPunishId = preset.id;
+      renderPunishmentPicker();
+    };
+    picker.appendChild(btn);
+  });
+  const customRow = document.getElementById('custom-punish-row');
+  if (customRow) customRow.classList.toggle('hidden', selectedPunishId !== 'custom');
+}
+
+function readPunishment() {
+  const preset = PUNISHMENT_PRESETS.find(p => p.id === selectedPunishId) ?? PUNISHMENT_PRESETS[0];
+  if (preset.id === 'custom') {
+    const raw = (document.getElementById('custom-punish-input')?.value ?? '').trim() || 'rep';
+    customPunishText = raw;
+    return { s: raw, p: raw + 's', icon: '✏️' };
+  }
+  return { s: preset.s, p: preset.p, icon: preset.icon };
+}
+
 // ── Avatar helpers ────────────────────────────────────────────────────────────
 const PLAYER_DEFAULT_EMOJIS = ['🦁','🐼','🦊','🐸','🐨','🐙','🦋','🐶','🐱','🐻'];
 const EMOJI_AVATAR_LIST = [
@@ -336,13 +381,14 @@ function _refreshAvBtn(idx) {
 // ── Offline: Setup ────────────────────────────────────────────────────────────
 function initOfflineSetup() {
   const row = document.getElementById('count-row');
-  if (row.children.length > 0) return;
+  if (row.children.length > 0) { renderPunishmentPicker(); return; }
   for (let n = 2; n <= 10; n++) {
     const btn = document.createElement('button');
     btn.className = 'count-btn'; btn.textContent = n;
     btn.onclick = () => selectCount(n, btn);
     row.appendChild(btn);
   }
+  renderPunishmentPicker();
 }
 
 function selectCount(n, btn) {
@@ -390,8 +436,13 @@ function startOfflineGame() {
   G.streakPunishment   = 0;
   G.message            = null;
   G.peekCard           = null;
+  const punishDef      = readPunishment();
+  G.punishSingular     = punishDef.s;
+  G.punishPlural       = punishDef.p;
+  G.punishIcon         = punishDef.icon;
   G.currentCard        = offlineDrawStartCard();
   showScreen('game-screen');
+  updateHTPPunishment();
   renderAll();
 }
 
@@ -530,7 +581,7 @@ function renderScoreboard() {
     div.innerHTML = `
       ${avatarHTML(p.avatar ?? '', 'av-sm')}
       <div class="pname">${esc(p.name)}${isMe ? ' <span class="pme">(you)</span>' : ''}</div>
-      <div class="pstats"><span class="pi">💪</span><span class="pn">${p.pushUps}</span></div>
+      <div class="pstats"><span class="pi">${G.punishIcon}</span><span class="pn">${p.pushUps}</span></div>
       ${p.healthCards.length ? `<div class="phealth">${'💚'.repeat(p.healthCards.length)}</div>` : ''}
     `;
   });
@@ -601,7 +652,7 @@ function showChallengePicker() {
     if (i === G.currentPlayerIndex) return;
     const btn = document.createElement('button');
     btn.className = 'challenge-target-btn';
-    btn.innerHTML = `${avatarHTML(p.avatar ?? '', 'av-sm')}<span class="ct-name">${esc(p.name)}</span><span class="ct-pushups">${p.pushUps} 💪</span>`;
+    btn.innerHTML = `${avatarHTML(p.avatar ?? '', 'av-sm')}<span class="ct-name">${esc(p.name)}</span><span class="ct-pushups">${p.pushUps} ${G.punishIcon}</span>`;
     btn.onclick = () => {
       document.getElementById('challenge-modal').classList.add('hidden');
       ACTION.challenge(i);
@@ -684,6 +735,19 @@ function diceDisplay(n) {
   return parts.join(' ');
 }
 
+function punish(n) {
+  return n === 1 ? G.punishSingular : G.punishPlural;
+}
+
+function updateHTPPunishment() {
+  document.querySelectorAll('.htp-ps').forEach(el => { el.textContent = G.punishSingular; });
+  document.querySelectorAll('.htp-pp').forEach(el => { el.textContent = G.punishPlural; });
+  const cm = document.getElementById('challenge-modal-sub');
+  if (cm) cm.textContent = `Pick a player to guess for you. If they're right, you do 3 ${G.punishPlural}.`;
+  const cs = document.getElementById('challenge-splash-sub');
+  if (cs) cs.innerHTML = `Guess right → they do 3 ${G.punishPlural}<br>Guess wrong → you do 1 ${G.punishSingular}`;
+}
+
 function renderPenaltyZone() {
   const zone = document.getElementById('penalty-zone');
   zone.innerHTML = '';
@@ -699,7 +763,7 @@ function renderPenaltyZone() {
     zone.innerHTML = `
       ${dice ? `<div class="dice-row">${dice}</div>` : ''}
       <div class="pushup-num slam-in">${n}×</div>
-      <div class="pushup-label">${esc(p?.name ?? '')} — Push-Up${n > 1 ? 's' : ''}!</div>
+      <div class="pushup-label">${esc(p?.name ?? '')} — ${punish(n).charAt(0).toUpperCase() + punish(n).slice(1)}!</div>
     `;
     AUDIO.slam();
     if (MODE === 'online' && G.currentPlayerIndex !== myPlayerIndex) return;
@@ -719,7 +783,7 @@ function renderPenaltyZone() {
     if (MODE === 'online') {
       if (G.penaltyQueue.includes(myPlayerIndex)) {
         zone.classList.remove('hidden');
-        zone.innerHTML = `<div class="pushup-num">2×</div><div class="pushup-label">Joker penalty — do your push-ups!</div>`;
+        zone.innerHTML = `<div class="pushup-num">2×</div><div class="pushup-label">Joker penalty — do your ${G.punishPlural}!</div>`;
         zone.appendChild(mkBtn('Done ✓', 'btn btn-done', () => ACTION.confirmOtherDone(myPlayerIndex)));
       } else {
         zone.classList.remove('hidden');
@@ -840,7 +904,7 @@ function offlineGuess(choice) {
       G.sidePile.push(next);
       G.penaltyQueue = G.players.map((_, i) => i).filter(i => i !== G.currentPlayerIndex);
       G.penaltyQueue.forEach(i => { G.players[i].pushUps += 2; });
-      showMsg(`🃏 Joker! Correct! All other players do 2 push-ups!`, 'correct');
+      showMsg(`🃏 Joker! Correct! All other players do 2 ${G.punishPlural}!`, 'correct');
       G.phase = 'others-penalty';
     } else {
       // Wrong joker guess — 2 push-ups + heat, drawn card becomes current, next player's turn
@@ -851,7 +915,7 @@ function offlineGuess(choice) {
       G.currentCard = next;
       G.phase = 'wrong';
       G.passAfterPenalty = true;
-      showMsg(`❌ Not a Joker! ${cardNameStr(next)}. ${p.name} does ${total} push-up${total > 1 ? 's' : ''}${heat > 0 ? ` (🔥 +${heat} heat)` : ''}!`, 'wrong');
+      showMsg(`❌ Not a Joker! ${cardNameStr(next)}. ${p.name} does ${total} ${punish(total)}${heat > 0 ? ` (🔥 +${heat} heat)` : ''}!`, 'wrong');
     }
     triggerReveal();
     return;
@@ -866,7 +930,7 @@ function offlineGuess(choice) {
     p.pushUps += total; G.pendingPushUps = total; G.turnPushUps += total;
     G.phase = 'wrong';
     G.passAfterPenalty = true;
-    showMsg(`🃏 Joker drawn! ${p.name} does ${total} push-up${total > 1 ? 's' : ''}${heat > 0 ? ` (🔥 +${heat} heat)` : ''}!`, 'wrong');
+    showMsg(`🃏 Joker drawn! ${p.name} does ${total} ${punish(total)}${heat > 0 ? ` (🔥 +${heat} heat)` : ''}!`, 'wrong');
     triggerReveal();
     return;
   }
@@ -887,7 +951,7 @@ function offlineGuess(choice) {
     G.currentCard = next;
     G.phase = 'wrong';
     G.passAfterPenalty = false;
-    showMsg(`❌ ${result.reason ? result.reason + ' — ' : ''}${cardNameStr(next)}. ${p.name} does ${total} push-up${total > 1 ? 's' : ''}${heat > 0 ? ` (🔥 +${heat} heat)` : ''}!`, 'wrong');
+    showMsg(`❌ ${result.reason ? result.reason + ' — ' : ''}${cardNameStr(next)}. ${p.name} does ${total} ${punish(total)}${heat > 0 ? ` (🔥 +${heat} heat)` : ''}!`, 'wrong');
   }
   triggerReveal();
 }
@@ -984,13 +1048,13 @@ function offlineChallengeGuess(choice) {
       G.currentPlayerIndex = challengerIdx;
       G.players[challengerIdx].pushUps += 3;
       G.pendingPushUps = 3; G.turnPushUps = 3; G.streakPunishment = 0; G.phase = 'wrong'; G.passAfterPenalty = true;
-      showMsg(`🃏 Joker! ${challengedName} wins the challenge — ${challengerName} does 3 push-ups!`, 'correct');
+      showMsg(`🃏 Joker! ${challengedName} wins the challenge — ${challengerName} does 3 ${G.punishPlural}!`, 'correct');
     } else {
       // Challenged wrong (guessed joker, not joker) — always 1 push-up, challenger's turn resumes
       G.players[G.currentPlayerIndex].pushUps += 1;
       G.pendingPushUps = 1; G.turnPushUps += 1; G.currentCard = next;
       G.phase = 'wrong'; G.passAfterPenalty = false;
-      showMsg(`❌ Not a Joker! ${cardNameStr(next)}. ${challengedName} does 1 push-up!`, 'wrong');
+      showMsg(`❌ Not a Joker! ${cardNameStr(next)}. ${challengedName} does 1 ${G.punishSingular}!`, 'wrong');
     }
     triggerReveal(); return;
   }
@@ -1000,7 +1064,7 @@ function offlineChallengeGuess(choice) {
     G.sidePile.push(next);
     G.players[G.currentPlayerIndex].pushUps += 1;
     G.pendingPushUps = 1; G.turnPushUps += 1; G.phase = 'wrong'; G.passAfterPenalty = false;
-    showMsg(`🃏 Joker drawn! ${challengedName} does 1 push-up!`, 'wrong');
+    showMsg(`🃏 Joker drawn! ${challengedName} does 1 ${G.punishSingular}!`, 'wrong');
     triggerReveal(); return;
   }
 
@@ -1012,12 +1076,12 @@ function offlineChallengeGuess(choice) {
     G.currentPlayerIndex = challengerIdx;
     G.players[challengerIdx].pushUps += 3;
     G.pendingPushUps = 3; G.turnPushUps = 3; G.streakPunishment = 0; G.phase = 'wrong'; G.passAfterPenalty = true;
-    showMsg(`✅ ${cardNameStr(next)} — ${challengedName} wins! ${challengerName} does 3 push-ups!`, 'correct');
+    showMsg(`✅ ${cardNameStr(next)} — ${challengedName} wins! ${challengerName} does 3 ${G.punishPlural}!`, 'correct');
   } else {
     // Challenged player wrong — always 1 push-up, turn returns to challenger after Done
     G.players[G.currentPlayerIndex].pushUps += 1;
     G.pendingPushUps = 1; G.turnPushUps += 1; G.phase = 'wrong'; G.passAfterPenalty = false;
-    showMsg(`❌ ${cardNameStr(next)}. ${challengedName} does 1 push-up!`, 'wrong');
+    showMsg(`❌ ${cardNameStr(next)}. ${challengedName} does 1 ${G.punishSingular}!`, 'wrong');
   }
   triggerReveal();
 }
@@ -1108,7 +1172,7 @@ function renderEndScreen() {
     div.innerHTML = `
       <span class="end-medal">${medals[i] || `${i + 1}.`}</span>
       <span class="end-name">${esc(p.name)}</span>
-      <span class="end-score">${p.pushUps} 💪</span>
+      <span class="end-score">${p.pushUps} ${G.punishIcon}</span>
     `;
     el.appendChild(div);
   });
@@ -1117,12 +1181,12 @@ function renderEndScreen() {
   statsEl.innerHTML = '';
   const total = G.players.reduce((s, p) => s + p.pushUps, 0);
   const statItems = [];
-  if (total > 0) statItems.push({ icon: '📊', text: `${total} total push-ups across all players` });
+  if (total > 0) statItems.push({ icon: '📊', text: `${total} total ${G.punishPlural} across all players` });
   if (G.players.length > 1) {
     const maxPU = Math.max(...G.players.map(p => p.pushUps));
     if (maxPU > 0) {
       const hardest = G.players.filter(p => p.pushUps === maxPU).map(p => esc(p.name)).join(' &amp; ');
-      statItems.push({ icon: '🔥', text: `Hardest hit: ${hardest} (${maxPU} push-ups)` });
+      statItems.push({ icon: '🔥', text: `Hardest hit: ${hardest} (${maxPU} ${G.punishPlural})` });
     }
   }
   const maxChallenge = Math.max(...G.players.map(p => p.challengesIssued || 0));

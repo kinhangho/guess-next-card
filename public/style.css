@@ -646,6 +646,34 @@ body {
 .game-menu-quit { color: var(--fire); }
 .game-menu-quit:active { border-color: var(--fire); }
 
+/* ── Punishment picker ── */
+.punish-picker-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 12px;
+}
+.punish-chip {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border-hi);
+  background: var(--surface-3);
+  color: var(--text-mid);
+  font-family: var(--font-display);
+  font-size: .9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .12s, border-color .12s, color .12s;
+  white-space: nowrap;
+}
+.punish-chip.selected {
+  background: var(--gold-dim);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.punish-chip:active { opacity: .75; }
+#custom-punish-row { margin-bottom: 8px; }
+
 /* ── Turn banner ── */
 .turn-banner {
   background: var(--gold-dim);

@@ -1,10 +1,10 @@
 # Guess Next Card
 
-A pass-the-phone card game — wrong guesses mean push-ups.
+A pass-the-phone card game — wrong guesses mean punishment reps (push-ups, squats, sips, or whatever the group decides).
 
 ## How to Play
 
-1. Pick **2–10 players**, set names, and choose an avatar (emoji or photo).
+1. Pick **2–10 players**, set names, choose an avatar (emoji or photo), and pick a **punishment type**.
 2. Hit **Start** — a card is dealt face-up to begin.
 3. On your turn, guess what the next drawn card will be:
    - **Number card showing** (A, 2–10): guess **Higher**, **Lower**, or **Joker**
@@ -12,9 +12,21 @@ A pass-the-phone card game — wrong guesses mean push-ups.
 4. After the card is revealed, the labels show **Previous → Drawn** and a result badge (✓ / ✗) confirms your guess.
 5. Correct guess → choose **Pass** (next player's turn) or **Continue** guessing.
 
+## Punishment Picker
+
+Before the game starts, pick what the group is doing for penalties:
+
+| Option | |
+|---|---|
+| 💪 Push-ups | 🏋️ Sit-ups |
+| 🦵 Squats | 🍺 Sips |
+| ⏱️ Sec. Plank | ✏️ Custom (type anything) |
+
+The chosen label replaces every "push-up" reference throughout the game. The selection is remembered if you reset mid-session.
+
 ## Penalties
 
-| Outcome | Push-ups |
+| Outcome | Reps |
 |---|---|
 | Wrong guess | 1 — keep guessing until correct |
 | Same number as current card | 2 |
@@ -22,7 +34,7 @@ A pass-the-phone card game — wrong guesses mean push-ups.
 | Correct Joker guess → all other players | 2 each |
 | Wrong Joker guess / unexpected Joker → current player | 2 |
 
-Push-up counts are shown as dice faces (⚀–⚅) in the penalty zone.
+Penalty counts are shown as dice faces (⚀–⚅) in the penalty zone.
 
 ## Heat / Streak
 
@@ -42,13 +54,13 @@ Drawn from the deck like any other card — no penalty when drawn; play continue
 
 | Cards held | Ability |
 |---|---|
-| 1 or 2 | **Skip** — appears when you owe push-ups; uses 1 health card to cancel the penalty (card removed from game) |
+| 1 or 2 | **Skip** — appears when you owe penalties; uses 1 health card to cancel the penalty (card removed from game) |
 | 2 | **Flip −2** — appears before guessing; peeks at the next card, but both health cards are shuffled back into the deck |
 
 ## Jokers
 
-- **Correct Joker guess** → all other players do 2 push-ups each; Joker is set aside; current player continues from the same card.
-- **Wrong Joker guess** (or Joker drawn unexpectedly) → current player does 2 push-ups; Joker is set aside; play continues normally.
+- **Correct Joker guess** → all other players do 2 reps each; Joker is set aside; current player continues from the same card.
+- **Wrong Joker guess** (or Joker drawn unexpectedly) → current player does 2 reps; Joker is set aside; play continues normally.
 
 ## Challenge ⚡
 
@@ -56,8 +68,8 @@ Before guessing, tap **⚡ Challenge** to dare another player to guess for you.
 
 | Outcome | Result |
 |---|---|
-| They guess **right** | You do **3 push-ups** and lose your turn |
-| They guess **wrong** | They do **1 push-up**, your turn resumes |
+| They guess **right** | You do **3 reps** and lose your turn |
+| They guess **wrong** | They do **1 rep**, your turn resumes |
 
 ## In-Game Menu
 
@@ -73,7 +85,7 @@ Each player picks an avatar during setup — choose from 30 emoji or take/upload
 
 ## Scoreboard
 
-Tracks each player's push-up count live. The active player is highlighted in gold. Health card icons (💚) show per card held.
+Tracks each player's penalty count live. The active player is highlighted in gold. Health card icons (💚) show per card held.
 
 ## Tech Stack
 
