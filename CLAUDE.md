@@ -102,18 +102,55 @@ Health cards sit in the deck and are drawn like any other card. When drawn, **no
 
 ## Scoreboard
 
-Displayed live for all players throughout the game. Each player entry shows their name and cumulative push-up count. The active player is highlighted. Health card icons (💚) are shown per card held.
+Displayed live for all players throughout the game. Each player entry shows their avatar, name, and cumulative push-up count. The active player is highlighted. Health card icons (💚) are shown per card held.
 
 ---
 
-## Challenge Mechanic (multiplayer / online build only)
+## Player Avatars
+
+During setup, each player has a circular avatar button next to their name input. Tapping it opens a picker with:
+- **📷 Photo / Camera** — takes or picks a photo from the device; stored as a base64 data URI.
+- **Emoji grid** — 30 preset emoji to choose from.
+
+Avatars appear in scoreboard chips, the turn banner, and the challenge picker.
+
+---
+
+## Heat / Streak Mechanic
+
+Each time the current player presses **Continue** (guessing again after a correct guess), a global heat counter (`G.streakPunishment`) increments by 1.
+
+- The heat is shown as a 🔥 banner in the guess zone and action zone.
+- Heat carries across player turns on Pass — it is **not reset** when the turn passes.
+- Whoever next **gets a guess wrong** pays their normal push-up penalty **plus all accumulated heat**, and the heat resets to 0.
+- Heat also resets when a challenge ends the turn involuntarily (challenger penalised or challenged player penalised and turn passes).
+
+---
+
+## Dice Push-up Display
+
+When a player owes push-ups, the penalty zone shows Unicode dice faces (⚀–⚅) representing the **cumulative push-ups this turn** (`G.turnPushUps`) alongside the current penalty count. Multiple dice stack when the total exceeds 6.
+
+---
+
+## Challenge Mechanic
 
 On their turn (before guessing), the current player may tap **⚡ Challenge** to pick any other player and force them to guess instead.
 
-- **Challenged player guesses wrong** → they do the push-ups; the challenger's turn resumes from the new current card.
-- **Challenged player guesses right** → the challenger does **2 push-ups** and their turn ends (next player goes).
+- **Challenged player guesses wrong** → they do **1 push-up** (always, regardless of same-rank/color); the challenger's turn resumes from the new current card.
+- **Challenged player guesses right** → the challenger does **3 push-ups** and their turn ends (next player goes).
 
-The Challenge button is only shown during the guessing phase when there are at least 2 players. **Not implemented in the offline (pass-the-phone) build.**
+The Challenge button is shown during the guessing phase when there are at least 2 players. Implemented in both offline and online builds.
+
+---
+
+## In-Game Menu
+
+A **☰** button in the game top-bar opens a bottom sheet with:
+- **▶ Resume** — dismisses the menu, game continues.
+- **↺ Reset Game** — keeps player names and avatars, resets all push-up scores, deals a fresh 56-card deck. Player 1 starts.
+- **📖 How to Play** — opens the rules modal.
+- **✕ Quit to Main** — returns to the home screen.
 
 ---
 

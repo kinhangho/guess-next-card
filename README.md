@@ -4,7 +4,7 @@ A pass-the-phone card game — wrong guesses mean push-ups.
 
 ## How to Play
 
-1. Pick **2–10 players** on the start screen and enter names.
+1. Pick **2–10 players**, set names, and choose an avatar (emoji or photo).
 2. Hit **Start** — a card is dealt face-up to begin.
 3. On your turn, guess what the next drawn card will be:
    - **Number card showing** (A, 2–10): guess **Higher**, **Lower**, or **Joker**
@@ -21,6 +21,12 @@ A pass-the-phone card game — wrong guesses mean push-ups.
 | Same number **and** same color | 3 |
 | Correct Joker guess → all other players | 2 each |
 | Wrong Joker guess / unexpected Joker → current player | 2 |
+
+Push-up counts are shown as dice faces (⚀–⚅) in the penalty zone.
+
+## Heat / Streak
+
+Every **Continue** adds 1 🔥 heat to a shared counter. Heat carries across turns — it doesn't reset when the turn passes. Whoever next **gets a guess wrong** pays their normal penalty **plus all accumulated heat**. The heat banner shows in the guess zone so everyone knows the risk.
 
 ## Deck (56 cards)
 
@@ -44,15 +50,37 @@ Drawn from the deck like any other card — no penalty when drawn; play continue
 - **Correct Joker guess** → all other players do 2 push-ups each; Joker is set aside; current player continues from the same card.
 - **Wrong Joker guess** (or Joker drawn unexpectedly) → current player does 2 push-ups; Joker is set aside; play continues normally.
 
+## Challenge ⚡
+
+Before guessing, tap **⚡ Challenge** to dare another player to guess for you.
+
+| Outcome | Result |
+|---|---|
+| They guess **right** | You do **3 push-ups** and lose your turn |
+| They guess **wrong** | They do **1 push-up**, your turn resumes |
+
+## In-Game Menu
+
+Tap **☰** during the game to open the menu:
+- **Resume** — close and keep playing
+- **Reset Game** — keep names/avatars, wipe scores, deal a fresh deck
+- **How to Play** — open the rules
+- **Quit to Main** — return to the home screen
+
+## Avatars
+
+Each player picks an avatar during setup — choose from 30 emoji or take/upload a photo. Avatars appear in the scoreboard, turn banner, and challenge picker.
+
 ## Scoreboard
 
-Tracks each player's push-up count live throughout the game.
+Tracks each player's push-up count live. The active player is highlighted in gold. Health card icons (💚) show per card held.
 
 ## Tech Stack
 
 - **Backend**: Node.js + Express + Socket.IO
 - **Frontend**: Vanilla HTML / CSS / JS
 - **Mobile**: Capacitor (iOS)
+- **Sound**: Web Audio API (procedural sound effects, no audio files)
 
 ## Running Locally
 
