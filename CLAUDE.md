@@ -190,7 +190,17 @@ Turns pass clockwise. A player's turn ends when they choose to Pass after a corr
 
 When the user's request matches an available skill, invoke it via the Skill tool. When in doubt, invoke the skill.
 
-Key routing rules:
+### Project-specific skills (in `.claude/skills/`)
+
+| Trigger | Skill |
+|---------|-------|
+| Run / start the game locally | `/run-game` |
+| QA test game mechanics | `/game-qa` |
+| Review game logic against rules | `/game-review` |
+| Plan / spec a new feature | `/game-spec` |
+
+### gstack skills (global)
+
 - Product ideas/brainstorming → invoke /office-hours
 - Strategy/scope → invoke /plan-ceo-review
 - Architecture → invoke /plan-eng-review
