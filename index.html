@@ -2,15 +2,100 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Guess Next Card</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- non-render-blocking font load: page paints immediately, fonts swap in when ready -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;900&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;900&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap"></noscript>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<!-- ── Setup Screen ── -->
-<div id="setup-screen">
+<!-- ── Home Screen ── -->
+<div id="home-screen">
   <div class="setup-box">
+    <div class="logo">🃏</div>
+    <h1>Guess Next Card</h1>
+    <p class="subtitle">A push-up card game</p>
+    <div class="home-btn-col">
+      <button id="online-btn" class="btn btn-gold btn-wide" onclick="showScreen('online-screen'); initSocket()">🌐 Play Online</button>
+      <button class="btn btn-outline btn-wide" onclick="showScreen('setup-screen'); initOfflineSetup()">👥 Play Offline</button>
+      <button class="btn btn-ghost btn-wide" onclick="document.getElementById('how-to-play-modal').classList.remove('hidden')">📖 How to Play</button>
+      <p id="native-note" class="hidden" style="color:#9ca3af;font-size:0.8rem;text-align:center">Online mode coming soon</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── Online Setup Screen ── -->
+<div id="online-screen" class="hidden">
+  <div class="setup-box">
+    <button class="back-btn" onclick="showScreen('home-screen')">← Back</button>
+    <div class="logo">🌐</div>
+    <h1>Online Play</h1>
+
+    <div class="field-group">
+      <label class="field-label">Your Name</label>
+      <input id="online-name" class="text-input" type="text" placeholder="Enter your name" maxlength="20" />
+    </div>
+
+    <div class="tab-row">
+      <button class="tab active" id="tab-btn-create" onclick="switchTab('create')">Create</button>
+      <button class="tab" id="tab-btn-join"   onclick="switchTab('join')">Join Code</button>
+      <button class="tab" id="tab-btn-browse" onclick="switchTab('browse')">Browse</button>
+    </div>
+
+    <div id="tab-create" class="tab-panel">
+      <label class="toggle-label">
+        <input type="checkbox" id="room-private" />
+        <span>Private Room (invite only)</span>
+      </label>
+      <button class="btn btn-gold btn-wide" onclick="createRoom()">Create Room</button>
+    </div>
+
+    <div id="tab-join" class="tab-panel hidden">
+      <div class="field-group">
+        <label class="field-label">Room Code</label>
+        <input id="room-code-input" class="text-input text-upper" type="text" placeholder="e.g. ABC123" maxlength="6" />
+      </div>
+      <button class="btn btn-gold btn-wide" onclick="joinRoomByCode()">Join Room</button>
+    </div>
+
+    <div id="tab-browse" class="tab-panel hidden">
+      <div id="public-rooms-list" class="rooms-list"></div>
+      <button class="btn btn-outline btn-wide" onclick="fetchPublicRooms()">↻ Refresh</button>
+    </div>
+
+    <div id="online-error" class="error-msg hidden"></div>
+  </div>
+</div>
+
+<!-- ── Lobby Screen ── -->
+<div id="lobby-screen" class="hidden">
+  <div class="setup-box">
+    <button class="back-btn" onclick="leaveRoom()">← Leave</button>
+    <div class="logo">🎮</div>
+    <h1>Game Lobby</h1>
+
+    <div id="room-code-display" class="room-code-box hidden">
+      <div class="room-code-label">Room Code</div>
+      <div id="room-code-value" class="room-code-value"></div>
+      <button class="btn btn-outline btn-sm" onclick="copyRoomCode()">Copy</button>
+    </div>
+
+    <div id="lobby-players" class="lobby-players"></div>
+
+    <p id="lobby-status" class="lobby-status">Waiting for players…</p>
+    <button id="start-game-btn" class="btn btn-gold btn-wide hidden" onclick="startOnlineGame()">▶ Start Game</button>
+    <div id="lobby-error" class="error-msg hidden"></div>
+  </div>
+</div>
+
+<!-- ── Offline Setup Screen ── -->
+<div id="setup-screen" class="hidden">
+  <div class="setup-box">
+    <button class="back-btn" onclick="showScreen('home-screen')">← Back</button>
     <div class="logo">🃏</div>
     <h1>Guess Next Card</h1>
     <p class="subtitle">A push-up card game</p>
@@ -21,33 +106,39 @@
     <div id="name-section" class="hidden">
       <h2>Player Names</h2>
       <div id="name-inputs"></div>
-      <button class="btn btn-gold" onclick="startGame()">▶ Start Game</button>
+      <h2>Punishment</h2>
+      <div id="punishment-picker" class="punish-picker-row"></div>
+      <div id="custom-punish-row" class="hidden">
+        <input id="custom-punish-input" class="text-input" type="text" placeholder="e.g. burpees" maxlength="20" />
+      </div>
+      <button class="btn btn-gold btn-wide" onclick="startOfflineGame()">▶ Start Game</button>
     </div>
   </div>
 </div>
 
 <!-- ── Game Screen ── -->
 <div id="game-screen" class="hidden">
-  <div class="layout">
 
-    <!-- Left: Scoreboard -->
-    <aside class="panel scoreboard-panel">
-      <div class="panel-title">Players</div>
-      <div id="scoreboard"></div>
-    </aside>
+  <!-- Score strip: player chips scroll horizontally -->
+  <div class="score-strip">
+    <div id="scoreboard"></div>
+  </div>
 
-    <!-- Centre: Table -->
-    <main class="main-area">
+  <!-- Green felt: cards + turn info -->
+  <main class="main-area">
+    <div class="felt-inner">
       <div class="top-bar">
         <span class="game-name">🃏 Guess Next Card</span>
-        <span id="deck-count" class="deck-badge">56 cards</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span id="joker-status" class="deck-badge hidden"></span>
+          <span id="deck-count" class="deck-badge">56 cards</span>
+          <button class="menu-btn" onclick="openGameMenu()" aria-label="Menu">☰</button>
+        </div>
       </div>
-
       <div id="turn-banner" class="turn-banner"></div>
-
       <div class="table-area">
         <div class="card-station">
-          <div class="card-label" id="label-current">Current Card</div>
+          <div class="card-label" id="label-current">Current</div>
           <div id="current-card" class="card"></div>
         </div>
         <div class="versus-col">
@@ -55,32 +146,36 @@
           <div id="result-badge" class="result-badge hidden"></div>
         </div>
         <div class="card-station">
-          <div class="card-label" id="label-next">Next Card</div>
+          <div class="card-label" id="label-next">Next</div>
           <div id="next-card" class="card back">?</div>
         </div>
       </div>
-
       <div id="msg" class="msg hidden"></div>
+      <div id="waiting-banner" class="waiting-banner hidden"></div>
+    </div>
+  </main>
 
-      <!-- Flip hint (2 health cards) -->
-      <div id="flip-zone" class="btn-row"></div>
+  <!-- Action bar: all buttons live here, thumb-reach zone -->
+  <div class="action-bar">
+    <div id="flip-zone" class="btn-row"></div>
+    <div id="challenge-zone" class="btn-row hidden"></div>
+    <div id="guess-zone" class="btn-row"></div>
+    <div id="action-zone" class="btn-row hidden"></div>
+    <div id="penalty-zone" class="penalty-zone hidden"></div>
+  </div>
 
-      <!-- Guess buttons -->
-      <div id="guess-zone" class="btn-row"></div>
+  <!-- Side pile kept in DOM for JS, not shown on mobile -->
+  <div id="side-pile" style="display:none"></div>
 
-      <!-- Pass / Continue -->
-      <div id="action-zone" class="btn-row hidden"></div>
+</div>
 
-      <!-- Push-up penalty zone -->
-      <div id="penalty-zone" class="penalty-zone hidden"></div>
-    </main>
-
-    <!-- Right: Joker side pile -->
-    <aside class="panel side-panel">
-      <div class="panel-title">Joker Pile</div>
-      <div id="side-pile"></div>
-    </aside>
-
+<!-- ── Challenge Picker Modal ── -->
+<div id="challenge-modal" class="modal hidden">
+  <div class="modal-box">
+    <h2>⚡ Challenge</h2>
+    <p id="challenge-modal-sub">Pick a player to guess for you. If they're right, you do 3 push-ups.</p>
+    <div id="challenge-targets" class="challenge-targets"></div>
+    <button class="btn btn-outline btn-wide" style="margin-top:4px" onclick="ACTION.cancelChallenge()">Cancel</button>
   </div>
 </div>
 
@@ -90,11 +185,124 @@
     <h2>🔮 Peek!</h2>
     <p>The next card is:</p>
     <div id="peek-card" class="card" style="margin:20px auto;width:100px;height:140px"></div>
-    <p class="modal-note">Your 2 health cards have been shuffled back into the deck.</p>
-    <button class="btn btn-gold" onclick="closePeek()">Got it!</button>
+    <p class="modal-note">Both health cards shuffled back into the deck.</p>
+    <button class="btn btn-gold" onclick="ACTION.closePeek()">Got it!</button>
   </div>
 </div>
 
+<!-- ── How to Play Modal ── -->
+<div id="how-to-play-modal" class="modal hidden" onclick="this.classList.add('hidden')">
+  <div class="modal-box htp-box" onclick="event.stopPropagation()">
+    <h2>📖 How to Play</h2>
+    <div class="htp-scroll">
+      <div class="htp-section">
+        <div class="htp-heading">The Deck (56 cards)</div>
+        <div class="htp-row"><span class="htp-icon">🂠</span><span class="htp-text">52 standard cards (A–K × ♥♦♣♠) · 2 Health Cards · 1 Red Joker · 1 Black Joker</span></div>
+        <div class="htp-row"><span class="htp-icon">📐</span><span class="htp-text">Ranks: A=1, 2–10, J=11, Q=12, K=13</span></div>
+      </div>
+      <div class="htp-section">
+        <div class="htp-heading">Your Turn — Guess the Next Card</div>
+        <div class="htp-row"><span class="htp-icon">🔢</span><span class="htp-text"><strong>Number card showing (A–10)</strong> — tap <strong>Higher</strong>, <strong>Lower</strong>, or <strong>Joker</strong></span></div>
+        <div class="htp-row"><span class="htp-icon">👑</span><span class="htp-text"><strong>Face card showing (J, Q, K)</strong> — tap <strong>Red</strong>, <strong>Black</strong>, or <strong>Joker</strong></span></div>
+      </div>
+      <div class="htp-section">
+        <div class="htp-heading">Correct Guess</div>
+        <div class="htp-row"><span class="htp-icon">✅</span><span class="htp-text">Choose <strong>Pass</strong> (next player goes) or <strong>Continue</strong> guessing on the same turn.</span></div>
+      </div>
+      <div class="htp-section">
+        <div class="htp-heading">Wrong Guess — Punishment!</div>
+        <div class="htp-row"><span class="htp-icon">❌</span><span class="htp-text">Wrong guess → <strong>1 <span class="htp-ps">push-up</span></strong>, keep guessing until you're right.</span></div>
+        <div class="htp-row"><span class="htp-icon">🟰</span><span class="htp-text">Same number → <strong>2 <span class="htp-pp">push-ups</span></strong></span></div>
+        <div class="htp-row"><span class="htp-icon">🎯</span><span class="htp-text">Same number <em>and</em> same color → <strong>3 <span class="htp-pp">push-ups</span></strong></span></div>
+      </div>
+      <div class="htp-section">
+        <div class="htp-heading">💚 Health Cards</div>
+        <div class="htp-row"><span class="htp-icon">💚</span><span class="htp-text">Drawn like any card — no penalty. You keep it.</span></div>
+        <div class="htp-row"><span class="htp-icon">1️⃣</span><span class="htp-text">Hold <strong>1</strong>: tap <strong>Skip</strong> to avoid any <span class="htp-ps">push-up</span> once (card removed).</span></div>
+        <div class="htp-row"><span class="htp-icon">2️⃣</span><span class="htp-text">Hold <strong>2</strong>: <strong>Skip −1</strong> (same) or <strong>Flip −2</strong> to peek the next card (both cards shuffled back).</span></div>
+      </div>
+      <div class="htp-section">
+        <div class="htp-heading">🃏 Jokers</div>
+        <div class="htp-row"><span class="htp-icon">✅</span><span class="htp-text">Correct Joker guess → all <em>other</em> players do 2 <span class="htp-pp">push-ups</span>. Joker set aside. You continue.</span></div>
+        <div class="htp-row"><span class="htp-icon">❌</span><span class="htp-text">Wrong Joker guess or surprise Joker → you do 2 <span class="htp-pp">push-ups</span>. Joker set aside. Next player's turn.</span></div>
+      </div>
+      <div class="htp-section">
+        <div class="htp-heading">⚡ Challenge</div>
+        <div class="htp-row"><span class="htp-icon">⚡</span><span class="htp-text">Tap <strong>Challenge</strong> before guessing to dare another player to guess for you.</span></div>
+        <div class="htp-row"><span class="htp-icon">🏆</span><span class="htp-text">They guess <strong>right</strong> → you do <strong>3 <span class="htp-pp">push-ups</span></strong> and lose your turn.</span></div>
+        <div class="htp-row"><span class="htp-icon">💀</span><span class="htp-text">They guess <strong>wrong</strong> → they do <strong>1 <span class="htp-ps">push-up</span></strong>, your turn resumes.</span></div>
+      </div>
+    </div>
+    <button class="btn btn-gold btn-wide" onclick="document.getElementById('how-to-play-modal').classList.add('hidden')">Got it!</button>
+  </div>
+</div>
+
+<!-- ── Game Menu Sheet ── -->
+<div id="game-menu" class="modal game-menu-modal hidden" onclick="if(this===event.target)closeGameMenu()">
+  <div class="game-menu-box">
+    <div class="game-menu-title">Menu</div>
+    <button class="game-menu-item" onclick="closeGameMenu()">▶ Resume</button>
+    <button class="game-menu-item" onclick="resetOfflineGame()">↺ Reset Game</button>
+    <button class="game-menu-item" onclick="closeGameMenu();document.getElementById('how-to-play-modal').classList.remove('hidden')">📖 How to Play</button>
+    <button class="game-menu-item game-menu-quit" onclick="quitToHome()">✕ Quit to Main</button>
+  </div>
+</div>
+
+<!-- ── Avatar Picker Sheet ── -->
+<div id="avatar-sheet" class="modal avatar-sheet-modal hidden" onclick="if(this===event.target)closeAvatarSheet()">
+  <div class="avatar-sheet-box">
+    <div class="avatar-sheet-title">Choose Avatar</div>
+    <button class="btn btn-outline btn-wide" type="button" onclick="triggerAvatarFile()">📷 Photo / Camera</button>
+    <div class="emoji-grid-label">Or pick an icon</div>
+    <div class="emoji-grid" id="emoji-grid"></div>
+    <button class="btn btn-ghost btn-wide" type="button" onclick="closeAvatarSheet()" style="margin-top:4px">Cancel</button>
+  </div>
+</div>
+<input type="file" id="avatar-file-input" accept="image/*" onchange="handleAvatarFile(this)" style="display:none">
+
+<!-- ── Handoff Overlay ── -->
+<div id="handoff-overlay" class="fullscreen-overlay hidden">
+  <div class="overlay-content">
+    <div class="overlay-avatar">👤</div>
+    <div id="handoff-name" class="overlay-name">Player</div>
+    <div id="handoff-sub" class="overlay-sub">Your turn!</div>
+    <button class="btn btn-gold btn-wide" id="handoff-ready-btn">I'm Ready →</button>
+  </div>
+</div>
+
+<!-- ── Challenge Splash ── -->
+<div id="challenge-splash" class="fullscreen-overlay challenge-splash-bg hidden">
+  <div class="overlay-content">
+    <div class="overlay-bolt">⚡</div>
+    <div id="splash-title" class="overlay-name splash-name"></div>
+    <div id="challenge-splash-sub" class="overlay-sub">Guess right → they do 3 push-ups<br>Guess wrong → you do 1 push-up</div>
+    <button class="btn btn-challenge btn-wide" id="challenge-accept-btn">Accept ⚡</button>
+  </div>
+</div>
+
+<!-- ── End Screen ── -->
+<div id="end-screen" class="hidden">
+  <div id="confetti-container" class="confetti-container"></div>
+  <div class="setup-box" style="z-index:1">
+    <div id="end-trophy" class="logo">🏆</div>
+    <h1>Game Over!</h1>
+    <p id="end-winner-name" class="subtitle"></p>
+    <div id="end-players" class="end-players"></div>
+    <div id="end-stats" class="end-stats"></div>
+    <button class="btn btn-gold btn-wide" onclick="showScreen('home-screen')">Play Again</button>
+  </div>
+</div>
+
+<script>
+  // Stub io() so game.js doesn't throw if socket.io fails to load (native/offline mode)
+  window._ioStubbed = false;
+  function io(url, opts) {
+    window._ioStubbed = true;
+    return { on(){}, emit(){}, connected: false, disconnect(){} };
+  }
+</script>
+<script src="js/socket.io.min.js"></script>
+<script src="sounds.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

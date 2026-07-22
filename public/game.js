@@ -111,6 +111,7 @@ function initSocket() {
   socket = io();
 
   socket.on('game-state', (room) => {
+    MODE = 'online';
     const prevPhase = G.phase;
     const prevChallengedIdx = G.challengedIdx;
     myPlayerIndex        = room.myIndex;
@@ -124,6 +125,8 @@ function initSocket() {
     G.sidePile           = room.sidePile;
     G.phase              = room.phase;
     G.pendingPushUps     = room.pendingPushUps;
+    G.turnPushUps        = room.turnPushUps ?? 0;
+    G.streakPunishment   = room.streakPunishment ?? 0;
     G.penaltyQueue       = room.penaltyQueue;
     G.passAfterPenalty   = room.passAfterPenalty;
     G.passAvailable      = room.passAvailable;

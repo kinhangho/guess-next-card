@@ -23,7 +23,7 @@ function createRoom(hostSocketId, hostName, isPrivate) {
     deck: [], currentCard: null, drawnCard: null, deckCount: 0,
     currentPlayerIndex: 0, sidePile: [],
     phase: 'guessing',
-    pendingPushUps: 0, penaltyQueue: [],
+    pendingPushUps: 0, turnPushUps: 0, streakPunishment: 0, penaltyQueue: [],
     passAfterPenalty: false, passAvailable: false,
     message: null, peekCard: null,
     challengerId: null, challengedIdx: null,
@@ -163,7 +163,8 @@ io.on('connection', socket => {
     room.deck = buildDeck();
     room.currentCard = drawStartCard(room);
     room.drawnCard = null; room.currentPlayerIndex = 0; room.sidePile = [];
-    room.phase = 'guessing'; room.pendingPushUps = 0; room.penaltyQueue = [];
+    room.phase = 'guessing'; room.pendingPushUps = 0; room.turnPushUps = 0; room.streakPunishment = 0;
+    room.penaltyQueue = [];
     room.passAfterPenalty = false; room.passAvailable = false;
     room.message = null; room.peekCard = null;
     room.challengerId = null; room.challengedIdx = null;
@@ -196,19 +197,23 @@ io.on('connection', socket => {
         room.message = { text: `🃏 Joker! Correct! All other players do 2 push-ups!`, type: 'correct' };
         room.phase = 'others-penalty';
       } else {
-        room.players[myIdx].pushUps += 2;
-        room.pendingPushUps = 2; room.currentCard = next;
+        const heat = room.streakPunishment; room.streakPunishment = 0;
+        const total = 2 + heat;
+        room.players[myIdx].pushUps += total;
+        room.pendingPushUps = total; room.turnPushUps += total; room.currentCard = next;
         room.phase = 'wrong'; room.passAfterPenalty = true;
-        room.message = { text: `❌ Not a Joker! ${cardName(next)}. ${room.players[myIdx].name} does 2 push-ups!`, type: 'wrong' };
+        room.message = { text: `❌ Not a Joker! ${cardName(next)}. ${room.players[myIdx].name} does ${total} push-up${total > 1 ? 's' : ''}${heat > 0 ? ` (🔥 +${heat} heat)` : ''}!`, type: 'wrong' };
       }
       broadcast(room); return;
     }
 
     if (next.type === 'joker') {
       room.sidePile.push(next);
-      room.players[myIdx].pushUps += 2;
-      room.pendingPushUps = 2; room.phase = 'wrong'; room.passAfterPenalty = true;
-      room.message = { text: `🃏 Joker drawn! ${room.players[myIdx].name} does 2 push-ups!`, type: 'wrong' };
+      const heat = room.streakPunishment; room.streakPunishment = 0;
+      const total = 2 + heat;
+      room.players[myIdx].pushUps += total;
+      room.pendingPushUps = total; room.turnPushUps += total; room.phase = 'wrong'; room.passAfterPenalty = true;
+      room.message = { text: `🃏 Joker drawn! ${room.players[myIdx].name} does ${total} push-up${total > 1 ? 's' : ''}${heat > 0 ? ` (🔥 +${heat} heat)` : ''}!`, type: 'wrong' };
       broadcast(room); return;
     }
 
@@ -217,10 +222,12 @@ io.on('connection', socket => {
       room.currentCard = next; room.passAvailable = true; room.phase = 'correct';
       room.message = { text: `✅ Correct! ${cardName(next)}`, type: 'correct' };
     } else {
-      room.players[myIdx].pushUps += result.pushUps;
-      room.pendingPushUps = result.pushUps; room.currentCard = next;
+      const heat = room.streakPunishment; room.streakPunishment = 0;
+      const total = result.pushUps + heat;
+      room.players[myIdx].pushUps += total;
+      room.pendingPushUps = total; room.turnPushUps += total; room.currentCard = next;
       room.phase = 'wrong'; room.passAfterPenalty = false;
-      room.message = { text: `❌ ${result.reason ? result.reason + ' — ' : ''}${cardName(next)}. ${room.players[myIdx].name} does ${result.pushUps} push-up${result.pushUps > 1 ? 's' : ''}!`, type: 'wrong' };
+      room.message = { text: `❌ ${result.reason ? result.reason + ' — ' : ''}${cardName(next)}. ${room.players[myIdx].name} does ${total} push-up${total > 1 ? 's' : ''}${heat > 0 ? ` (🔥 +${heat} heat)` : ''}!`, type: 'wrong' };
     }
     broadcast(room);
   });
@@ -232,6 +239,7 @@ io.on('connection', socket => {
     if (myIdx !== room.currentPlayerIndex || room.phase !== 'correct') return;
     room.currentPlayerIndex = (room.currentPlayerIndex + 1) % room.players.length;
     room.phase = 'guessing'; room.passAvailable = false; room.drawnCard = null; room.message = null;
+    room.turnPushUps = 0;
     if (room.deck.length === 0) room.phase = 'ended';
     broadcast(room);
   });
@@ -241,6 +249,7 @@ io.on('connection', socket => {
     if (!room) return;
     const myIdx = room.players.findIndex(p => p.socketId === socket.id);
     if (myIdx !== room.currentPlayerIndex || room.phase !== 'correct') return;
+    room.streakPunishment++;
     room.phase = 'guessing'; room.passAvailable = false; room.drawnCard = null; room.message = null;
     if (room.deck.length === 0) room.phase = 'ended';
     broadcast(room);
@@ -258,8 +267,10 @@ io.on('connection', socket => {
     if (returnToChallenger) {
       room.currentPlayerIndex = room.challengerId;
       room.challengerId = null; room.challengedIdx = null;
+      room.turnPushUps = 0; room.streakPunishment = 0;
     } else if (passNext) {
       room.currentPlayerIndex = (room.currentPlayerIndex + 1) % room.players.length;
+      room.turnPushUps = 0; room.streakPunishment = 0;
     }
     if (room.deck.length === 0) room.phase = 'ended';
     broadcast(room);
@@ -274,6 +285,7 @@ io.on('connection', socket => {
     if (p.healthCards.length === 0) return;
     p.healthCards.pop();
     p.pushUps -= room.pendingPushUps;
+    room.turnPushUps = Math.max(0, room.turnPushUps - room.pendingPushUps);
     const returnToChallenger = room.challengedIdx !== null;
     const passNext = room.passAfterPenalty;
     room.pendingPushUps = 0; room.phase = 'guessing'; room.drawnCard = null;
@@ -281,8 +293,10 @@ io.on('connection', socket => {
     if (returnToChallenger) {
       room.currentPlayerIndex = room.challengerId;
       room.challengerId = null; room.challengedIdx = null;
+      room.turnPushUps = 0; room.streakPunishment = 0;
     } else if (passNext) {
       room.currentPlayerIndex = (room.currentPlayerIndex + 1) % room.players.length;
+      room.turnPushUps = 0; room.streakPunishment = 0;
     }
     room.message = { text: `💚 Skip used! ${p.name} avoids the penalty.`, type: 'health' };
     broadcast(room);
@@ -295,6 +309,7 @@ io.on('connection', socket => {
     const myIdx = room.players.findIndex(p => p.socketId === socket.id);
     if (myIdx !== room.currentPlayerIndex) return;
     if (targetIdx === myIdx || targetIdx < 0 || targetIdx >= room.players.length) return;
+    room.turnPushUps = 0;
     room.challengerId = myIdx;
     room.challengedIdx = targetIdx;
     room.currentPlayerIndex = targetIdx;
@@ -323,40 +338,46 @@ io.on('connection', socket => {
 
     if (choice === 'joker') {
       if (next.type === 'joker') {
+        // Challenged player wins by correctly guessing Joker: challenger pays 3, turn ends.
         room.sidePile.push(next); room.currentCard = next;
         room.challengedIdx = null; room.challengerId = null;
         room.currentPlayerIndex = challengerIdx;
-        room.players[challengerIdx].pushUps += 2;
-        room.pendingPushUps = 2; room.phase = 'wrong'; room.passAfterPenalty = true;
-        room.message = { text: `🃏 Joker! ${challengedName} wins the challenge — ${challengerName} does 2 push-ups!`, type: 'correct' };
+        room.players[challengerIdx].pushUps += 3;
+        room.pendingPushUps = 3; room.turnPushUps = 3; room.streakPunishment = 0;
+        room.phase = 'wrong'; room.passAfterPenalty = true;
+        room.message = { text: `🃏 Joker! ${challengedName} wins the challenge — ${challengerName} does 3 push-ups!`, type: 'correct' };
       } else {
-        room.players[myIdx].pushUps += 2; room.pendingPushUps = 2;
+        // Challenged player wrong: always 1 rep, challenger's turn resumes after Done.
+        room.players[myIdx].pushUps += 1; room.pendingPushUps = 1; room.turnPushUps += 1;
         room.currentCard = next; room.phase = 'wrong'; room.passAfterPenalty = false;
-        room.message = { text: `❌ Not a Joker! ${cardName(next)}. ${challengedName} does 2 push-ups!`, type: 'wrong' };
+        room.message = { text: `❌ Not a Joker! ${cardName(next)}. ${challengedName} does 1 push-up!`, type: 'wrong' };
       }
       broadcast(room); return;
     }
 
     if (next.type === 'joker') {
       room.sidePile.push(next);
-      room.players[myIdx].pushUps += 2; room.pendingPushUps = 2;
+      room.players[myIdx].pushUps += 1; room.pendingPushUps = 1; room.turnPushUps += 1;
       room.phase = 'wrong'; room.passAfterPenalty = false;
-      room.message = { text: `🃏 Joker! ${challengedName} does 2 push-ups!`, type: 'wrong' };
+      room.message = { text: `🃏 Joker! ${challengedName} does 1 push-up!`, type: 'wrong' };
       broadcast(room); return;
     }
 
     const result = evaluate(choice, room.currentCard, next);
     room.currentCard = next;
     if (result.correct) {
+      // Challenged player wins: challenger pays 3, turn ends.
       room.challengedIdx = null; room.challengerId = null;
       room.currentPlayerIndex = challengerIdx;
-      room.players[challengerIdx].pushUps += 2;
-      room.pendingPushUps = 2; room.phase = 'wrong'; room.passAfterPenalty = true;
-      room.message = { text: `✅ ${cardName(next)} — ${challengedName} wins! ${challengerName} does 2 push-ups!`, type: 'correct' };
+      room.players[challengerIdx].pushUps += 3;
+      room.pendingPushUps = 3; room.turnPushUps = 3; room.streakPunishment = 0;
+      room.phase = 'wrong'; room.passAfterPenalty = true;
+      room.message = { text: `✅ ${cardName(next)} — ${challengedName} wins! ${challengerName} does 3 push-ups!`, type: 'correct' };
     } else {
-      room.players[myIdx].pushUps += result.pushUps;
-      room.pendingPushUps = result.pushUps; room.phase = 'wrong'; room.passAfterPenalty = false;
-      room.message = { text: `❌ ${result.reason ? result.reason + ' — ' : ''}${cardName(next)}. ${challengedName} does ${result.pushUps} push-up${result.pushUps > 1 ? 's' : ''}!`, type: 'wrong' };
+      // Challenged player wrong: always 1 rep regardless of same-rank/color bonus.
+      room.players[myIdx].pushUps += 1;
+      room.pendingPushUps = 1; room.turnPushUps += 1; room.phase = 'wrong'; room.passAfterPenalty = false;
+      room.message = { text: `❌ ${cardName(next)}. ${challengedName} does 1 push-up!`, type: 'wrong' };
     }
     broadcast(room);
   });

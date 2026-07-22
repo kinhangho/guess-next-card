@@ -87,12 +87,30 @@ Each player picks an avatar during setup — choose from 30 emoji or take/upload
 
 Tracks each player's penalty count live. The active player is highlighted in gold. Health card icons (💚) show per card held.
 
+## Online Play 🌐
+
+Create or join a room to play with friends on separate devices. Online mode mirrors
+the offline ruleset exactly — same penalties, same Heat/Streak carry-over, same
+Challenge payouts (3 reps if the challenger loses, 1 flat rep if the challenged
+player is wrong). The punishment picker is offline-only; online rooms always use
+the default push-up labels.
+
 ## Tech Stack
 
 - **Backend**: Node.js + Express + Socket.IO
 - **Frontend**: Vanilla HTML / CSS / JS
 - **Mobile**: Capacitor (iOS)
 - **Sound**: Web Audio API (procedural sound effects, no audio files)
+
+## Project Layout
+
+`server.js` serves static assets from `public/` (`webDir` in `capacitor.config.json`
+also points here) — that's the single source of truth for the web client.
+`game.js`, `index.html`, and `style.css` at the repo root are kept as synced
+copies for convenience when opening the file directly; always edit under
+`public/` and re-copy, don't edit the root copies in place. Run `npx cap copy ios`
+after any `public/` change to keep the bundled iOS build (`ios/App/App/public/`)
+in sync.
 
 ## Running Locally
 
