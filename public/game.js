@@ -265,7 +265,6 @@ const PUNISHMENT_PRESETS = [
   { id: 'pushups', icon: '💪', label: 'Push-ups',    s: 'push-up',    p: 'push-ups' },
   { id: 'situps',  icon: '🏋️', label: 'Sit-ups',     s: 'sit-up',     p: 'sit-ups' },
   { id: 'squats',  icon: '🦵', label: 'Squats',       s: 'squat',      p: 'squats' },
-  { id: 'sips',    icon: '🍺', label: 'Sips',         s: 'sip',        p: 'sips' },
   { id: 'plank',   icon: '⏱️', label: 'Sec. Plank',   s: 'sec plank',  p: 'sec plank' },
   { id: 'custom',  icon: '✏️', label: 'Custom…',      s: null,         p: null },
 ];
@@ -819,12 +818,13 @@ function renderResultIndicator() {
     return;
   }
 
-  labelCurrent.textContent = 'Previous';
-  labelNext.textContent    = 'Drawn';
-
   const guessMap = { higher: 'HIGHER', lower: 'LOWER', red: 'RED', black: 'BLACK', joker: 'JOKER' };
   const guessLabel = guessMap[G.lastGuess] ?? '';
   const correct = G.phase === 'correct' || G.phase === 'others-penalty';
+  const correctJokerGuess = G.lastGuess === 'joker' && G.phase === 'others-penalty';
+
+  labelCurrent.textContent = correctJokerGuess ? 'Current' : 'Previous';
+  labelNext.textContent    = correctJokerGuess ? 'Joker Drawn' : 'Drawn';
   badge.textContent = correct ? `✓ ${guessLabel}` : `✗ ${guessLabel}`;
   badge.className = '';
   void badge.offsetWidth;
@@ -1045,8 +1045,8 @@ function offlineChallengeGuess(choice) {
   if (choice === 'joker') {
     if (next.type === 'joker') {
       // Challenged won (correct joker) — challenger does 3 push-ups and loses their turn
+      // Joker is set aside (out of play); current card stays as-is, same as the non-challenge case.
       G.sidePile.push(next);
-      G.currentCard = next;
       G.challengedIdx = null; G.challengerId = null;
       G.currentPlayerIndex = challengerIdx;
       G.players[challengerIdx].pushUps += 3;
