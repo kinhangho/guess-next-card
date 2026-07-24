@@ -339,7 +339,8 @@ io.on('connection', socket => {
     if (choice === 'joker') {
       if (next.type === 'joker') {
         // Challenged player wins by correctly guessing Joker: challenger pays 3, turn ends.
-        room.sidePile.push(next); room.currentCard = next;
+        // Joker is set aside (out of play); current card stays as-is, same as the non-challenge case.
+        room.sidePile.push(next);
         room.challengedIdx = null; room.challengerId = null;
         room.currentPlayerIndex = challengerIdx;
         room.players[challengerIdx].pushUps += 3;
@@ -427,4 +428,4 @@ io.on('connection', socket => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Guess Next Card server → http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`Dare Dare Dare server → http://localhost:${PORT}`));

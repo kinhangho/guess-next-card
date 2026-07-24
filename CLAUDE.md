@@ -2,9 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project: Guess Next Card
+## Project: Dare Dare Dare
 
-A browser-based multiplayer poker card game named **"Guess Next Card"**.
+A browser-based multiplayer poker card game named **"Dare Dare Dare"**.
 
 ---
 
@@ -167,7 +167,6 @@ Before the game starts, players choose what the punishment is. Options:
 | `pushups` | 💪 | push-up | push-ups |
 | `situps` | 🏋️ | sit-up | sit-ups |
 | `squats` | 🦵 | squat | squats |
-| `sips` | 🍺 | sip | sips |
 | `plank` | ⏱️ | sec plank | sec plank |
 | `custom` | ✏️ | *(user input)* | *(input + "s")* |
 

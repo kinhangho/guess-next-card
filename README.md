@@ -1,6 +1,6 @@
-# Guess Next Card
+# Dare Dare Dare
 
-A pass-the-phone card game — wrong guesses mean punishment reps (push-ups, squats, sips, or whatever the group decides).
+A pass-the-phone card game — wrong guesses mean punishment reps (push-ups, squats, or whatever the group decides).
 
 ## How to Play
 
@@ -19,8 +19,8 @@ Before the game starts, pick what the group is doing for penalties:
 | Option | |
 |---|---|
 | 💪 Push-ups | 🏋️ Sit-ups |
-| 🦵 Squats | 🍺 Sips |
-| ⏱️ Sec. Plank | ✏️ Custom (type anything) |
+| 🦵 Squats | ⏱️ Sec. Plank |
+| ✏️ Custom (type anything) | |
 
 The chosen label replaces every "push-up" reference throughout the game. The selection is remembered if you reset mid-session.
 
