@@ -93,7 +93,15 @@ Create or join a room to play with friends on separate devices. Online mode mirr
 the offline ruleset exactly — same penalties, same Heat/Streak carry-over, same
 Challenge payouts (3 reps if the challenger loses, 1 flat rep if the challenged
 player is wrong). The punishment picker is offline-only; online rooms always use
-the default push-up labels.
+the default push-up labels. Available on web and in the native iOS app.
+
+## Game Center Leaderboard 🏆 (iOS only)
+
+When an online match ends, the iOS app silently submits the signed-in player's
+penalty count to the `online_fewest_penalties` Game Center leaderboard (lower is
+better). Offline matches don't submit — with multiple local players sharing one
+device there's no single Game Center identity to attribute a score to. Requires
+the player to be signed into Game Center; submission fails silently otherwise.
 
 ## Tech Stack
 

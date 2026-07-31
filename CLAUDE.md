@@ -185,6 +185,30 @@ Before the game starts, players choose what the punishment is. Options:
 
 Turns pass clockwise. A player's turn ends when they choose to Pass after a correct guess.
 
+---
+
+## Game Center Leaderboard (iOS only)
+
+Online mode is available on both web and the native iOS app (previously hidden
+on native via `IS_NATIVE`; re-enabled — see `public/game.js`).
+
+- Native bridge: `ios/App/App/GameCenterPlugin.swift`, a minimal Capacitor plugin
+  (`CAPBridgedPlugin`, JS name `GameCenter`) exposing `authenticate()` and
+  `submitScore({ score, leaderboardID })` via `GameKit`.
+- `authenticate()` is called once, silently, on app launch when `IS_NATIVE` (see
+  top of `public/game.js`). No UI nag if the player declines/cancels sign-in.
+- `submitScore()` is called from `renderEndScreen()` only when `MODE === 'online'`
+  and `IS_NATIVE`, submitting the local player's own `pushUps` (penalty count) to
+  the `online_fewest_penalties` leaderboard. Guarded by `gcScoreSubmitted` so it
+  fires once per match; reset to `false` when a new online lobby starts.
+- Offline matches never submit — multiple local players share one device, so
+  there's no single Game Center identity a score can be attributed to.
+- Leaderboard sort order must be configured as **ascending** (lower score wins)
+  in App Store Connect's Game Center setup — this isn't set from code.
+- `com.apple.developer.game-center` entitlement lives in
+  `ios/App/App/App.entitlements`, wired via `CODE_SIGN_ENTITLEMENTS` in
+  `project.pbxproj`.
+
 ## Skill routing
 
 When the user's request matches an available skill, invoke it via the Skill tool. When in doubt, invoke the skill.

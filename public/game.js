@@ -2,8 +2,7 @@
 const IS_NATIVE = !!(window.Capacitor?.isNativePlatform?.());
 if (IS_NATIVE) {
   document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('online-btn')?.classList.add('hidden');
-    document.getElementById('native-note')?.classList.add('hidden');
+    window.Capacitor?.Plugins?.GameCenter?.authenticate().catch(() => {});
   });
 }
 
@@ -14,6 +13,7 @@ let socket = null;
 let myPlayerIndex = -1;
 let currentRoomId = null;
 let isHost = false;
+let gcScoreSubmitted = false;
 
 // ── Shared Game State ─────────────────────────────────────────────────────────
 const G = {
@@ -106,9 +106,14 @@ function showError(elId, msg) {
 }
 
 // ── Online: Socket setup ──────────────────────────────────────────────────────
+// Native builds load their HTML from a local Capacitor scheme, not from the
+// backend, so io() has no same-origin server to default to — point it at the
+// deployed server explicitly. Web keeps same-origin (empty string = current page).
+const SERVER_URL = IS_NATIVE ? 'https://dare-dare-dare.onrender.com' : '';
+
 function initSocket() {
   if (socket && socket.connected) return;
-  socket = io();
+  socket = io(SERVER_URL);
 
   socket.on('game-state', (room) => {
     MODE = 'online';
@@ -140,6 +145,7 @@ function initSocket() {
       G.drawnCard != null;
 
     if (room.status === 'lobby') {
+      gcScoreSubmitted = false;
       renderLobby(room);
     } else if (room.phase === 'ended') {
       showScreen('end-screen');
@@ -1179,6 +1185,15 @@ function renderEndScreen() {
     `;
     el.appendChild(div);
   });
+
+  if (MODE === 'online' && IS_NATIVE && !gcScoreSubmitted && myPlayerIndex >= 0) {
+    gcScoreSubmitted = true;
+    const myScore = G.players[myPlayerIndex]?.pushUps ?? 0;
+    window.Capacitor?.Plugins?.GameCenter?.submitScore({
+      score: myScore,
+      leaderboardID: 'online_fewest_penalties',
+    }).catch(() => {});
+  }
 
   const statsEl = document.getElementById('end-stats');
   statsEl.innerHTML = '';
