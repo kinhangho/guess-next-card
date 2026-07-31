@@ -226,12 +226,8 @@ function switchTab(name) {
 function renderLobby(room) {
   showScreen('lobby-screen');
   const codeBox = document.getElementById('room-code-display');
-  if (room.isPrivate) {
-    document.getElementById('room-code-value').textContent = room.id;
-    codeBox.classList.remove('hidden');
-  } else {
-    codeBox.classList.add('hidden');
-  }
+  document.getElementById('room-code-value').textContent = room.id;
+  codeBox.classList.remove('hidden');
   const list = document.getElementById('lobby-players');
   list.innerHTML = '';
   room.players.forEach((p, i) => {
