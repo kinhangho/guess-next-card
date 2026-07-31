@@ -1,10 +1,5 @@
 // ── Native detection (Capacitor) ─────────────────────────────────────────────
 const IS_NATIVE = !!(window.Capacitor?.isNativePlatform?.());
-if (IS_NATIVE) {
-  document.addEventListener('DOMContentLoaded', () => {
-    window.Capacitor?.Plugins?.GameCenter?.authenticate().catch(() => {});
-  });
-}
 
 // ── Mode & Online State ───────────────────────────────────────────────────────
 let MODE = 'offline';
@@ -13,7 +8,6 @@ let socket = null;
 let myPlayerIndex = -1;
 let currentRoomId = null;
 let isHost = false;
-let gcScoreSubmitted = false;
 
 // ── Shared Game State ─────────────────────────────────────────────────────────
 const G = {
@@ -145,7 +139,6 @@ function initSocket() {
       G.drawnCard != null;
 
     if (room.status === 'lobby') {
-      gcScoreSubmitted = false;
       renderLobby(room);
     } else if (room.phase === 'ended') {
       showScreen('end-screen');
@@ -1181,15 +1174,6 @@ function renderEndScreen() {
     `;
     el.appendChild(div);
   });
-
-  if (MODE === 'online' && IS_NATIVE && !gcScoreSubmitted && myPlayerIndex >= 0) {
-    gcScoreSubmitted = true;
-    const myScore = G.players[myPlayerIndex]?.pushUps ?? 0;
-    window.Capacitor?.Plugins?.GameCenter?.submitScore({
-      score: myScore,
-      leaderboardID: 'online_fewest_penalties',
-    }).catch(() => {});
-  }
 
   const statsEl = document.getElementById('end-stats');
   statsEl.innerHTML = '';
