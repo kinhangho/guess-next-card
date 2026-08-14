@@ -19,7 +19,7 @@ function createRoom(hostSocketId, hostName, isPrivate) {
   const room = {
     id, isPrivate, hostSocketId,
     status: 'lobby',
-    players: [{ socketId: hostSocketId, name: hostName, pushUps: 0, healthCards: [], connected: true }],
+    players: [{ socketId: hostSocketId, name: hostName, pushUps: 0, healthCards: [], challengesIssued: 0, ready: false, connected: true }],
     deck: [], currentCard: null, drawnCard: null, deckCount: 0,
     currentPlayerIndex: 0, sidePile: [],
     phase: 'guessing',
@@ -27,6 +27,8 @@ function createRoom(hostSocketId, hostName, isPrivate) {
     passAfterPenalty: false, passAvailable: false,
     message: null, peekCard: null,
     challengerId: null, challengedIdx: null,
+    countdown: null, countdownTimer: null,
+    lastGuessCorrect: null,
   };
   rooms.set(id, room);
   return room;
@@ -87,13 +89,16 @@ function insertRandom(deck, card) {
 }
 
 function drawStartCard(room) {
+  const setAside = [];
+  let card = null;
   while (room.deck.length > 0) {
-    const card = room.deck.shift();
-    if (card.type === 'joker')  { room.sidePile.push(card); continue; }
-    if (card.type === 'health') { room.players[0].healthCards.push(card); continue; }
-    return card;
+    const c = room.deck.shift();
+    if (c.type === 'joker' || c.type === 'health') { setAside.push(c); continue; }
+    card = c;
+    break;
   }
-  return null;
+  setAside.forEach(c => insertRandom(room.deck, c));
+  return card;
 }
 
 function broadcast(room) {
@@ -101,19 +106,50 @@ function broadcast(room) {
   room.players.forEach((p, idx) => {
     const s = io.sockets.sockets.get(p.socketId);
     if (!s) return;
-    const payload = { ...room, deck: undefined, myIndex: idx };
+    const payload = { ...room, deck: undefined, countdownTimer: undefined, myIndex: idx };
     if (idx !== room.currentPlayerIndex) payload.peekCard = null;
     s.emit('game-state', payload);
   });
 }
 
-function publicRoomList() {
-  const list = [];
-  rooms.forEach(r => {
-    if (!r.isPrivate && r.status === 'lobby')
-      list.push({ id: r.id, playerCount: r.players.length, hostName: r.players[0]?.name ?? '?' });
-  });
-  return list;
+function beginGame(room) {
+  room.status = 'playing';
+  room.deck = buildDeck();
+  room.currentCard = drawStartCard(room);
+  room.drawnCard = null; room.currentPlayerIndex = 0; room.sidePile = [];
+  room.phase = 'guessing'; room.pendingPushUps = 0; room.turnPushUps = 0; room.streakPunishment = 0;
+  room.penaltyQueue = [];
+  room.passAfterPenalty = false; room.passAvailable = false;
+  room.message = null; room.peekCard = null;
+  room.challengerId = null; room.challengedIdx = null;
+  room.lastGuessCorrect = null;
+}
+
+function startCountdown(room) {
+  if (room.countdownTimer) return;
+  room.countdown = 10;
+  room.countdownTimer = setInterval(() => {
+    room.countdown -= 1;
+    if (room.countdown <= 0) {
+      clearInterval(room.countdownTimer);
+      room.countdownTimer = null;
+      room.countdown = null;
+      beginGame(room);
+    }
+    broadcast(room);
+  }, 1000);
+}
+
+function cancelCountdown(room) {
+  if (room.countdownTimer) { clearInterval(room.countdownTimer); room.countdownTimer = null; }
+  room.countdown = null;
+}
+
+function findQuickStartRoom() {
+  for (const r of rooms.values()) {
+    if (!r.isPrivate && r.status === 'lobby' && r.players.length < 10) return r;
+  }
+  return null;
 }
 
 function handleLeave(socket, roomId) {
@@ -123,24 +159,34 @@ function handleLeave(socket, roomId) {
   if (idx === -1) return;
   socket.leave(roomId);
   room.players.splice(idx, 1);
-  if (room.players.length === 0) { rooms.delete(roomId); io.emit('public-rooms', publicRoomList()); return; }
+  if (room.players.length === 0) { cancelCountdown(room); rooms.delete(roomId); return; }
   if (room.hostSocketId === socket.id) room.hostSocketId = room.players[0].socketId;
   if (room.currentPlayerIndex >= room.players.length) room.currentPlayerIndex = 0;
   room.penaltyQueue = room.penaltyQueue.filter(i => i !== idx).map(i => i > idx ? i - 1 : i);
   if (room.penaltyQueue.length === 0 && room.phase === 'others-penalty') { room.phase = 'guessing'; room.message = null; }
+  if (room.status === 'lobby') cancelCountdown(room);
   broadcast(room);
-  if (!room.isPrivate) io.emit('public-rooms', publicRoomList());
 }
 
 io.on('connection', socket => {
-  socket.on('get-public-rooms', () => socket.emit('public-rooms', publicRoomList()));
-
-  socket.on('create-room', ({ playerName, isPrivate }) => {
+  socket.on('create-room', ({ playerName }) => {
     const name = (playerName || 'Player 1').trim().slice(0, 20);
-    const room = createRoom(socket.id, name, !!isPrivate);
+    const room = createRoom(socket.id, name, true);
     socket.join(room.id);
     broadcast(room);
-    if (!isPrivate) io.emit('public-rooms', publicRoomList());
+  });
+
+  socket.on('quick-start', ({ playerName }) => {
+    const name = (playerName || 'Player').trim().slice(0, 20) || 'Player';
+    let room = findQuickStartRoom();
+    if (room) {
+      room.players.push({ socketId: socket.id, name, pushUps: 0, healthCards: [], challengesIssued: 0, ready: false, connected: true });
+      cancelCountdown(room);
+    } else {
+      room = createRoom(socket.id, name, false);
+    }
+    socket.join(room.id);
+    broadcast(room);
   });
 
   socket.on('join-room', ({ roomId, playerName }) => {
@@ -149,32 +195,26 @@ io.on('connection', socket => {
     if (room.status !== 'lobby')  { socket.emit('error', 'Game already started'); return; }
     if (room.players.length >= 10){ socket.emit('error', 'Room is full (max 10)'); return; }
     const name = (playerName || `Player ${room.players.length + 1}`).trim().slice(0, 20);
-    room.players.push({ socketId: socket.id, name, pushUps: 0, healthCards: [], connected: true });
+    room.players.push({ socketId: socket.id, name, pushUps: 0, healthCards: [], challengesIssued: 0, ready: false, connected: true });
     socket.join(room.id);
+    cancelCountdown(room);
     broadcast(room);
-    if (!room.isPrivate) io.emit('public-rooms', publicRoomList());
   });
 
-  socket.on('start-game', ({ roomId }) => {
+  socket.on('toggle-ready', ({ roomId }) => {
     const room = rooms.get(roomId);
-    if (!room || room.hostSocketId !== socket.id) return;
-    if (room.players.length < 2) { socket.emit('error', 'Need at least 2 players to start'); return; }
-    room.status = 'playing';
-    room.deck = buildDeck();
-    room.currentCard = drawStartCard(room);
-    room.drawnCard = null; room.currentPlayerIndex = 0; room.sidePile = [];
-    room.phase = 'guessing'; room.pendingPushUps = 0; room.turnPushUps = 0; room.streakPunishment = 0;
-    room.penaltyQueue = [];
-    room.passAfterPenalty = false; room.passAvailable = false;
-    room.message = null; room.peekCard = null;
-    room.challengerId = null; room.challengedIdx = null;
+    if (!room || room.status !== 'lobby') return;
+    const p = room.players.find(pl => pl.socketId === socket.id);
+    if (!p) return;
+    p.ready = !p.ready;
+    if (room.players.length >= 2 && room.players.every(pl => pl.ready)) startCountdown(room);
+    else cancelCountdown(room);
     broadcast(room);
-    if (!room.isPrivate) io.emit('public-rooms', publicRoomList());
   });
 
   socket.on('guess', ({ roomId, choice }) => {
     const room = rooms.get(roomId);
-    if (!room || room.status !== 'playing' || room.phase !== 'guessing') return;
+    if (!room || room.status !== 'playing' || room.phase !== 'guessing' || room.challengedIdx !== null) return;
     const myIdx = room.players.findIndex(p => p.socketId === socket.id);
     if (myIdx !== room.currentPlayerIndex) return;
     if (room.deck.length === 0) { room.phase = 'ended'; broadcast(room); return; }
@@ -196,12 +236,14 @@ io.on('connection', socket => {
         room.penaltyQueue.forEach(i => { room.players[i].pushUps += 2; });
         room.message = { text: `🃏 Joker! Correct! All other players do 2 push-ups!`, type: 'correct' };
         room.phase = 'others-penalty';
+        room.lastGuessCorrect = true;
       } else {
         const heat = room.streakPunishment; room.streakPunishment = 0;
         const total = 2 + heat;
         room.players[myIdx].pushUps += total;
         room.pendingPushUps = total; room.turnPushUps += total; room.currentCard = next;
         room.phase = 'wrong'; room.passAfterPenalty = true;
+        room.lastGuessCorrect = false;
         room.message = { text: `❌ Not a Joker! ${cardName(next)}. ${room.players[myIdx].name} does ${total} push-up${total > 1 ? 's' : ''}${heat > 0 ? ` (🔥 +${heat} heat)` : ''}!`, type: 'wrong' };
       }
       broadcast(room); return;
@@ -213,6 +255,7 @@ io.on('connection', socket => {
       const total = 2 + heat;
       room.players[myIdx].pushUps += total;
       room.pendingPushUps = total; room.turnPushUps += total; room.phase = 'wrong'; room.passAfterPenalty = true;
+      room.lastGuessCorrect = false;
       room.message = { text: `🃏 Joker drawn! ${room.players[myIdx].name} does ${total} push-up${total > 1 ? 's' : ''}${heat > 0 ? ` (🔥 +${heat} heat)` : ''}!`, type: 'wrong' };
       broadcast(room); return;
     }
@@ -220,6 +263,7 @@ io.on('connection', socket => {
     const result = evaluate(choice, room.currentCard, next);
     if (result.correct) {
       room.currentCard = next; room.passAvailable = true; room.phase = 'correct';
+      room.lastGuessCorrect = true;
       room.message = { text: `✅ Correct! ${cardName(next)}`, type: 'correct' };
     } else {
       const heat = room.streakPunishment; room.streakPunishment = 0;
@@ -227,6 +271,7 @@ io.on('connection', socket => {
       room.players[myIdx].pushUps += total;
       room.pendingPushUps = total; room.turnPushUps += total; room.currentCard = next;
       room.phase = 'wrong'; room.passAfterPenalty = false;
+      room.lastGuessCorrect = false;
       room.message = { text: `❌ ${result.reason ? result.reason + ' — ' : ''}${cardName(next)}. ${room.players[myIdx].name} does ${total} push-up${total > 1 ? 's' : ''}${heat > 0 ? ` (🔥 +${heat} heat)` : ''}!`, type: 'wrong' };
     }
     broadcast(room);
@@ -267,7 +312,7 @@ io.on('connection', socket => {
     if (returnToChallenger) {
       room.currentPlayerIndex = room.challengerId;
       room.challengerId = null; room.challengedIdx = null;
-      room.turnPushUps = 0; room.streakPunishment = 0;
+      room.turnPushUps = 0;
     } else if (passNext) {
       room.currentPlayerIndex = (room.currentPlayerIndex + 1) % room.players.length;
       room.turnPushUps = 0; room.streakPunishment = 0;
@@ -293,7 +338,7 @@ io.on('connection', socket => {
     if (returnToChallenger) {
       room.currentPlayerIndex = room.challengerId;
       room.challengerId = null; room.challengedIdx = null;
-      room.turnPushUps = 0; room.streakPunishment = 0;
+      room.turnPushUps = 0;
     } else if (passNext) {
       room.currentPlayerIndex = (room.currentPlayerIndex + 1) % room.players.length;
       room.turnPushUps = 0; room.streakPunishment = 0;
@@ -310,6 +355,7 @@ io.on('connection', socket => {
     if (myIdx !== room.currentPlayerIndex) return;
     if (targetIdx === myIdx || targetIdx < 0 || targetIdx >= room.players.length) return;
     room.turnPushUps = 0;
+    room.players[myIdx].challengesIssued = (room.players[myIdx].challengesIssued || 0) + 1;
     room.challengerId = myIdx;
     room.challengedIdx = targetIdx;
     room.currentPlayerIndex = targetIdx;
@@ -346,11 +392,13 @@ io.on('connection', socket => {
         room.players[challengerIdx].pushUps += 3;
         room.pendingPushUps = 3; room.turnPushUps = 3; room.streakPunishment = 0;
         room.phase = 'wrong'; room.passAfterPenalty = true;
+        room.lastGuessCorrect = true;
         room.message = { text: `🃏 Joker! ${challengedName} wins the challenge — ${challengerName} does 3 push-ups!`, type: 'correct' };
       } else {
         // Challenged player wrong: always 1 rep, challenger's turn resumes after Done.
         room.players[myIdx].pushUps += 1; room.pendingPushUps = 1; room.turnPushUps += 1;
         room.currentCard = next; room.phase = 'wrong'; room.passAfterPenalty = false;
+        room.lastGuessCorrect = false;
         room.message = { text: `❌ Not a Joker! ${cardName(next)}. ${challengedName} does 1 push-up!`, type: 'wrong' };
       }
       broadcast(room); return;
@@ -360,6 +408,7 @@ io.on('connection', socket => {
       room.sidePile.push(next);
       room.players[myIdx].pushUps += 1; room.pendingPushUps = 1; room.turnPushUps += 1;
       room.phase = 'wrong'; room.passAfterPenalty = false;
+      room.lastGuessCorrect = false;
       room.message = { text: `🃏 Joker! ${challengedName} does 1 push-up!`, type: 'wrong' };
       broadcast(room); return;
     }
@@ -373,11 +422,13 @@ io.on('connection', socket => {
       room.players[challengerIdx].pushUps += 3;
       room.pendingPushUps = 3; room.turnPushUps = 3; room.streakPunishment = 0;
       room.phase = 'wrong'; room.passAfterPenalty = true;
+      room.lastGuessCorrect = true;
       room.message = { text: `✅ ${cardName(next)} — ${challengedName} wins! ${challengerName} does 3 push-ups!`, type: 'correct' };
     } else {
       // Challenged player wrong: always 1 rep regardless of same-rank/color bonus.
       room.players[myIdx].pushUps += 1;
       room.pendingPushUps = 1; room.turnPushUps += 1; room.phase = 'wrong'; room.passAfterPenalty = false;
+      room.lastGuessCorrect = false;
       room.message = { text: `❌ ${cardName(next)}. ${challengedName} does 1 push-up!`, type: 'wrong' };
     }
     broadcast(room);
@@ -413,6 +464,14 @@ io.on('connection', socket => {
     const room = rooms.get(roomId);
     if (!room) return;
     room.peekCard = null;
+    broadcast(room);
+  });
+
+  socket.on('reset-game', ({ roomId }) => {
+    const room = rooms.get(roomId);
+    if (!room || room.hostSocketId !== socket.id || room.status !== 'playing') return;
+    room.players.forEach(p => { p.pushUps = 0; p.healthCards = []; p.challengesIssued = 0; });
+    beginGame(room);
     broadcast(room);
   });
 

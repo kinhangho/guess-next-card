@@ -42,14 +42,11 @@
     <div class="tab-row">
       <button class="tab active" id="tab-btn-create" onclick="switchTab('create')">Create</button>
       <button class="tab" id="tab-btn-join"   onclick="switchTab('join')">Join Code</button>
-      <button class="tab" id="tab-btn-browse" onclick="switchTab('browse')">Browse</button>
+      <button class="tab" id="tab-btn-quick"  onclick="switchTab('quick')">Quick Start</button>
     </div>
 
     <div id="tab-create" class="tab-panel">
-      <label class="toggle-label">
-        <input type="checkbox" id="room-private" />
-        <span>Private Room (invite only)</span>
-      </label>
+      <p class="field-label" style="text-align:center">Creates a private room — share the code with friends to invite them.</p>
       <button class="btn btn-gold btn-wide" onclick="createRoom()">Create Room</button>
     </div>
 
@@ -61,9 +58,9 @@
       <button class="btn btn-gold btn-wide" onclick="joinRoomByCode()">Join Room</button>
     </div>
 
-    <div id="tab-browse" class="tab-panel hidden">
-      <div id="public-rooms-list" class="rooms-list"></div>
-      <button class="btn btn-outline btn-wide" onclick="fetchPublicRooms()">↻ Refresh</button>
+    <div id="tab-quick" class="tab-panel hidden">
+      <p class="field-label" style="text-align:center">Jump into an open room instantly, or start a new one for others to join.</p>
+      <button class="btn btn-gold btn-wide" onclick="quickStart()">⚡ Quick Start</button>
     </div>
 
     <div id="online-error" class="error-msg hidden"></div>
@@ -86,7 +83,7 @@
     <div id="lobby-players" class="lobby-players"></div>
 
     <p id="lobby-status" class="lobby-status">Waiting for players…</p>
-    <button id="start-game-btn" class="btn btn-gold btn-wide hidden" onclick="startOnlineGame()">▶ Start Game</button>
+    <button id="ready-btn" class="btn btn-gold btn-wide" onclick="toggleReady()">✓ I'm Ready</button>
     <div id="lobby-error" class="error-msg hidden"></div>
   </div>
 </div>
@@ -241,7 +238,7 @@
   <div class="game-menu-box">
     <div class="game-menu-title">Menu</div>
     <button class="game-menu-item" onclick="closeGameMenu()">▶ Resume</button>
-    <button class="game-menu-item" onclick="resetOfflineGame()">↺ Reset Game</button>
+    <button class="game-menu-item" onclick="resetGame()">↺ Reset Game</button>
     <button class="game-menu-item" onclick="closeGameMenu();document.getElementById('how-to-play-modal').classList.remove('hidden')">📖 How to Play</button>
     <button class="game-menu-item game-menu-quit" onclick="quitToHome()">✕ Quit to Main</button>
   </div>

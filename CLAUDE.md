@@ -25,7 +25,7 @@ Card ranks: A=1, 2–10, J=11, Q=12, K=13
 
 - Player selection screen: user picks **2–10 players** before the game starts.
 - Each player enters a name and chooses an avatar (emoji or camera photo).
-- A **Punishment Picker** appears after player names — choose from 6 presets or a custom word (see Punishment Picker section).
+- A **Punishment Picker** appears after player names — choose from 4 presets or a custom word (see Punishment Picker section).
 - UI shows: scoreboard for all players + remaining undrawn cards.
 - A **Start** button deals the first random card to begin the game.
 

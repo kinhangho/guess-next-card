@@ -199,21 +199,6 @@ body {
 .text-input:focus  { outline: none; border-color: var(--gold); }
 .text-upper { text-transform: uppercase; letter-spacing: 2px; }
 
-.toggle-label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--text-mid);
-  font-size: 0.9rem;
-  cursor: pointer;
-  align-self: flex-start;
-}
-.toggle-label input[type="checkbox"] {
-  width: 16px; height: 16px;
-  cursor: pointer;
-  accent-color: var(--gold);
-}
-
 /* ── Error Message ── */
 .error-msg {
   background: var(--fire-dim);
@@ -252,29 +237,6 @@ body {
 .tab:not(.active):hover { background: var(--surface-2); color: var(--text-hi); }
 
 .tab-panel { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; }
-
-/* ── Public Rooms ── */
-.rooms-list {
-  display: flex; flex-direction: column;
-  gap: 8px; width: 100%;
-  max-height: 220px; overflow-y: auto;
-}
-.room-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--surface-1);
-  border: 1.5px solid var(--border);
-  border-radius: var(--r-md);
-  padding: 10px 14px;
-  transition: border-color .15s;
-}
-.room-item:hover { border-color: var(--gold); }
-.room-item-info { font-size: 0.88rem; }
-.room-item-host { font-weight: 700; color: var(--text-hi); }
-.room-item-count { color: var(--text-mid); font-size: 0.8rem; margin-top: 2px; }
-.room-item .btn  { padding: 7px 14px; font-size: 0.82rem; flex-shrink: 0; }
-.rooms-empty { color: var(--text-lo); font-size: 0.88rem; text-align: center; padding: 20px 0; }
 
 /* ── Room Code Box ── */
 .room-code-box {
@@ -316,9 +278,12 @@ body {
   font-size: 0.9rem;
 }
 .lobby-player.host .lp-name::after { content: ' 👑'; }
-.lp-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--correct); flex-shrink: 0; }
+.lp-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-mid); flex-shrink: 0; transition: background .2s; }
+.lobby-player.ready .lp-dot { background: var(--correct); }
 .lp-name { font-weight: 700; }
-.lobby-status { color: var(--text-mid); font-size: 0.88rem; }
+.lp-ready-tag { margin-left: auto; font-size: 0.78rem; color: var(--text-mid); }
+.lobby-player.ready .lp-ready-tag { color: var(--correct); }
+.lobby-status { color: var(--text-mid); font-size: 0.88rem; font-weight: 700; }
 
 /* ── Player count selector ── */
 .count-row {
@@ -691,7 +656,12 @@ body {
   min-width: 200px;
   letter-spacing: 0.5px;
   transition: background .25s, border-color .25s, color .25s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
+.turn-banner .av-sm { width: 24px; height: 24px; font-size: 1rem; }
 .turn-banner.challenge-active {
   background: rgba(124,58,237,.15);
   border-color: #7C3AED;

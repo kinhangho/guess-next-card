@@ -18,6 +18,7 @@ const G = {
   drawnCard: null,
   revealFrom: null,    // card in the left slot before the guess (so both slots differ during reveal)
   lastGuess: null,     // the guess choice for the result badge
+  lastGuessCorrect: null, // whether that guess/challenge outcome was a win, independent of G.phase
   currentPlayerIndex: 0,
   sidePile: [],
   // phases: guessing | correct | wrong | others-penalty | ended
@@ -133,6 +134,7 @@ function initSocket() {
     G.peekCard           = room.peekCard;
     G.challengerId       = room.challengerId ?? null;
     G.challengedIdx      = room.challengedIdx ?? null;
+    G.lastGuessCorrect   = room.lastGuessCorrect ?? null;
 
     const justResolved = prevPhase === 'guessing' &&
       (G.phase === 'correct' || G.phase === 'wrong' || G.phase === 'others-penalty') &&
@@ -158,8 +160,6 @@ function initSocket() {
     }
   });
 
-  socket.on('public-rooms', renderPublicRooms);
-
   socket.on('error', (msg) => {
     if (!document.getElementById('online-screen').classList.contains('hidden'))
       showError('online-error', msg);
@@ -171,7 +171,7 @@ function initSocket() {
 function createRoom() {
   const name = document.getElementById('online-name').value.trim();
   if (!name) { showError('online-error', 'Enter your name first'); return; }
-  socket.emit('create-room', { playerName: name, isPrivate: document.getElementById('room-private').checked });
+  socket.emit('create-room', { playerName: name });
 }
 
 function joinRoomByCode() {
@@ -182,21 +182,21 @@ function joinRoomByCode() {
   socket.emit('join-room', { roomId: code, playerName: name });
 }
 
-function joinPublicRoom(roomId) {
+function quickStart() {
   const name = document.getElementById('online-name').value.trim();
   if (!name) { showError('online-error', 'Enter your name first'); return; }
-  socket.emit('join-room', { roomId, playerName: name });
+  socket.emit('quick-start', { playerName: name });
 }
 
-function startOnlineGame() { socket.emit('start-game', { roomId: currentRoomId }); }
+function toggleReady() {
+  if (socket && currentRoomId) socket.emit('toggle-ready', { roomId: currentRoomId });
+}
 
 function leaveRoom() {
   if (socket && currentRoomId) socket.emit('leave-room', { roomId: currentRoomId });
   currentRoomId = null;
   showScreen('home-screen');
 }
-
-function fetchPublicRooms() { if (socket) socket.emit('get-public-rooms'); }
 
 function copyRoomCode() {
   const code = document.getElementById('room-code-value').textContent;
@@ -207,11 +207,10 @@ function copyRoomCode() {
 
 // ── Online: Tab switching ─────────────────────────────────────────────────────
 function switchTab(name) {
-  ['create','join','browse'].forEach(t => {
+  ['create','join','quick'].forEach(t => {
     document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== name);
     document.getElementById(`tab-btn-${t}`).classList.toggle('active', t === name);
   });
-  if (name === 'browse') fetchPublicRooms();
   document.getElementById('online-error').classList.add('hidden');
 }
 
@@ -225,34 +224,29 @@ function renderLobby(room) {
   list.innerHTML = '';
   room.players.forEach((p, i) => {
     const div = document.createElement('div');
-    div.className = 'lobby-player' + (p.socketId === room.hostSocketId ? ' host' : '');
-    div.innerHTML = `<div class="lp-dot"></div><span class="lp-name">${esc(p.name)}</span>${i === room.myIndex ? '<span style="color:#fbbf24;font-size:0.78rem;margin-left:auto">(you)</span>' : ''}`;
+    div.className = 'lobby-player' + (p.socketId === room.hostSocketId ? ' host' : '') + (p.ready ? ' ready' : '');
+    div.innerHTML = `<div class="lp-dot"></div><span class="lp-name">${esc(p.name)}</span>` +
+      `<span class="lp-ready-tag">${p.ready ? '✅ Ready' : '⏳ Not ready'}</span>` +
+      `${i === room.myIndex ? '<span style="color:#fbbf24;font-size:0.78rem;margin-left:8px">(you)</span>' : ''}`;
     list.appendChild(div);
   });
-  const startBtn = document.getElementById('start-game-btn');
-  const statusEl = document.getElementById('lobby-status');
-  if (isHost) {
-    startBtn.classList.toggle('hidden', room.players.length < 2);
-    statusEl.textContent = room.players.length < 2 ? 'Waiting for at least 1 more player…' : `${room.players.length} players ready`;
-  } else {
-    startBtn.classList.add('hidden');
-    statusEl.textContent = `Waiting for host to start… (${room.players.length} players)`;
-  }
-}
 
-// ── Online: Render public rooms list ─────────────────────────────────────────
-function renderPublicRooms(list) {
-  const el = document.getElementById('public-rooms-list');
-  if (!list || list.length === 0) { el.innerHTML = '<div class="rooms-empty">No open rooms. Create one!</div>'; return; }
-  el.innerHTML = '';
-  list.forEach(r => {
-    const div = document.createElement('div');
-    div.className = 'room-item';
-    div.innerHTML = `<div class="room-item-info"><div class="room-item-host">${esc(r.hostName)}'s room</div><div class="room-item-count">${r.playerCount}/10 players</div></div>`;
-    const b = document.createElement('button');
-    b.className = 'btn btn-gold'; b.textContent = 'Join'; b.onclick = () => joinPublicRoom(r.id);
-    div.appendChild(b); el.appendChild(div);
-  });
+  const me = room.players[room.myIndex];
+  const readyBtn = document.getElementById('ready-btn');
+  const nowReady = !!me?.ready;
+  readyBtn.textContent = nowReady ? '✕ Not Ready' : '✓ I\'m Ready';
+  readyBtn.classList.toggle('btn-gold', !nowReady);
+  readyBtn.classList.toggle('btn-outline', nowReady);
+
+  const statusEl = document.getElementById('lobby-status');
+  if (room.countdown != null) {
+    statusEl.textContent = `🚀 Starting in ${room.countdown}…`;
+  } else if (room.players.length < 2) {
+    statusEl.textContent = 'Waiting for at least 1 more player…';
+  } else {
+    const readyCount = room.players.filter(p => p.ready).length;
+    statusEl.textContent = `${readyCount}/${room.players.length} players ready`;
+  }
 }
 
 // ── Punishment picker ─────────────────────────────────────────────────────────
@@ -452,6 +446,15 @@ function closeGameMenu() {
   document.getElementById('game-menu').classList.add('hidden');
 }
 
+function resetGame() {
+  if (MODE === 'online') {
+    closeGameMenu();
+    if (socket && currentRoomId) socket.emit('reset-game', { roomId: currentRoomId });
+    return;
+  }
+  resetOfflineGame();
+}
+
 function resetOfflineGame() {
   closeGameMenu();
   const players = G.players.map(p => ({ name: p.name, avatar: p.avatar }));
@@ -482,6 +485,7 @@ function resetOfflineGame() {
 
 function quitToHome() {
   closeGameMenu();
+  if (MODE === 'online') { leaveRoom(); return; }
   showScreen('home-screen');
 }
 
@@ -513,13 +517,16 @@ function shuffle(arr) {
 function rankVal(rank) { return { A:1, J:11, Q:12, K:13 }[rank] ?? parseInt(rank); }
 
 function offlineDrawStartCard() {
+  const setAside = [];
+  let card = null;
   while (G.deck.length > 0) {
-    const card = G.deck.shift();
-    if (card.type === 'joker')  { G.sidePile.push(card); continue; }
-    if (card.type === 'health') { G.players[0].healthCards.push(card); continue; }
-    return card;
+    const c = G.deck.shift();
+    if (c.type === 'joker' || c.type === 'health') { setAside.push(c); continue; }
+    card = c;
+    break;
   }
-  return null;
+  setAside.forEach(c => offlineInsertRandom(c));
+  return card;
 }
 
 // ── Render (shared) ───────────────────────────────────────────────────────────
@@ -619,14 +626,15 @@ function renderTurnBanner() {
   if (!p) return;
   if (G.challengedIdx !== null) {
     const challenger = G.players[G.challengerId];
-    banner.textContent = `⚡ ${challenger?.name ?? '?'} → ${p.name}`;
+    banner.innerHTML = `⚡ ${esc(challenger?.name ?? '?')} → ${avatarHTML(p.avatar ?? '', 'av-sm')}${esc(p.name)}`;
     banner.classList.add('challenge-active');
     return;
   }
   banner.classList.remove('challenge-active');
   const isMe = MODE === 'online' && G.currentPlayerIndex === myPlayerIndex;
-  const avPrefix = (p.avatar && !p.avatar.startsWith('data:')) ? `${p.avatar} ` : '';
-  banner.textContent = isMe ? `Your Turn (${p.name})` : `${avPrefix}${p.name}'s Turn`;
+  banner.innerHTML = isMe
+    ? `Your Turn (${esc(p.name)})`
+    : `${avatarHTML(p.avatar ?? '', 'av-sm')}${esc(p.name)}'s Turn`;
 }
 
 function renderChallengeZone() {
@@ -666,7 +674,8 @@ function renderFlipZone() {
   const activeIdx = MODE === 'online' ? myPlayerIndex : G.currentPlayerIndex;
   if (activeIdx !== G.currentPlayerIndex) return;
   const p = G.players[G.currentPlayerIndex];
-  if (p && p.healthCards.length >= 2)
+  const deckLen = MODE === 'online' ? G.deckCount : G.deck.length;
+  if (p && p.healthCards.length >= 2 && deckLen > 0)
     zone.appendChild(mkBtn('🔮 Flip −2 (peek next card)', 'btn btn-flip', () => ACTION.useFlip()));
 }
 
@@ -815,7 +824,7 @@ function renderResultIndicator() {
 
   const guessMap = { higher: 'HIGHER', lower: 'LOWER', red: 'RED', black: 'BLACK', joker: 'JOKER' };
   const guessLabel = guessMap[G.lastGuess] ?? '';
-  const correct = G.phase === 'correct' || G.phase === 'others-penalty';
+  const correct = !!G.lastGuessCorrect;
   const correctJokerGuess = G.lastGuess === 'joker' && G.phase === 'others-penalty';
 
   labelCurrent.textContent = correctJokerGuess ? 'Current' : 'Previous';
@@ -904,6 +913,7 @@ function offlineGuess(choice) {
       G.penaltyQueue.forEach(i => { G.players[i].pushUps += 2; });
       showMsg(`🃏 Joker! Correct! All other players do 2 ${G.punishPlural}!`, 'correct');
       G.phase = 'others-penalty';
+      G.lastGuessCorrect = true;
     } else {
       // Wrong joker guess — 2 push-ups + heat, drawn card becomes current, next player's turn
       const p = G.players[G.currentPlayerIndex];
@@ -913,6 +923,7 @@ function offlineGuess(choice) {
       G.currentCard = next;
       G.phase = 'wrong';
       G.passAfterPenalty = true;
+      G.lastGuessCorrect = false;
       showMsg(`❌ Not a Joker! ${cardNameStr(next)}. ${p.name} does ${total} ${punish(total)}${heat > 0 ? ` (🔥 +${heat} heat)` : ''}!`, 'wrong');
     }
     triggerReveal();
@@ -928,6 +939,7 @@ function offlineGuess(choice) {
     p.pushUps += total; G.pendingPushUps = total; G.turnPushUps += total;
     G.phase = 'wrong';
     G.passAfterPenalty = true;
+    G.lastGuessCorrect = false;
     showMsg(`🃏 Joker drawn! ${p.name} does ${total} ${punish(total)}${heat > 0 ? ` (🔥 +${heat} heat)` : ''}!`, 'wrong');
     triggerReveal();
     return;
@@ -939,6 +951,7 @@ function offlineGuess(choice) {
     G.currentCard = next;
     G.passAvailable = true;
     G.phase = 'correct';
+    G.lastGuessCorrect = true;
     showMsg(`✅ Correct! ${cardNameStr(next)}`, 'correct');
   } else {
     const p = G.players[G.currentPlayerIndex];
@@ -949,6 +962,7 @@ function offlineGuess(choice) {
     G.currentCard = next;
     G.phase = 'wrong';
     G.passAfterPenalty = false;
+    G.lastGuessCorrect = false;
     showMsg(`❌ ${result.reason ? result.reason + ' — ' : ''}${cardNameStr(next)}. ${p.name} does ${total} ${punish(total)}${heat > 0 ? ` (🔥 +${heat} heat)` : ''}!`, 'wrong');
   }
   triggerReveal();
@@ -961,7 +975,7 @@ function offlineDonePenalty() {
   if (returnToChallenger) {
     G.currentPlayerIndex = G.challengerId;
     G.challengerId = null; G.challengedIdx = null;
-    G.turnPushUps = 0; G.streakPunishment = 0;
+    G.turnPushUps = 0;
   } else if (passNext) {
     G.currentPlayerIndex = (G.currentPlayerIndex + 1) % G.players.length;
     G.turnPushUps = 0; G.streakPunishment = 0;
@@ -988,7 +1002,7 @@ function offlineSkipPenalty() {
   if (returnToChallenger) {
     G.currentPlayerIndex = G.challengerId;
     G.challengerId = null; G.challengedIdx = null;
-    G.turnPushUps = 0; G.streakPunishment = 0;
+    G.turnPushUps = 0;
   } else if (passNext) {
     G.currentPlayerIndex = (G.currentPlayerIndex + 1) % G.players.length;
     G.turnPushUps = 0; G.streakPunishment = 0;
@@ -1046,12 +1060,14 @@ function offlineChallengeGuess(choice) {
       G.currentPlayerIndex = challengerIdx;
       G.players[challengerIdx].pushUps += 3;
       G.pendingPushUps = 3; G.turnPushUps = 3; G.streakPunishment = 0; G.phase = 'wrong'; G.passAfterPenalty = true;
+      G.lastGuessCorrect = true;
       showMsg(`🃏 Joker! ${challengedName} wins the challenge — ${challengerName} does 3 ${G.punishPlural}!`, 'correct');
     } else {
       // Challenged wrong (guessed joker, not joker) — always 1 push-up, challenger's turn resumes
       G.players[G.currentPlayerIndex].pushUps += 1;
       G.pendingPushUps = 1; G.turnPushUps += 1; G.currentCard = next;
       G.phase = 'wrong'; G.passAfterPenalty = false;
+      G.lastGuessCorrect = false;
       showMsg(`❌ Not a Joker! ${cardNameStr(next)}. ${challengedName} does 1 ${G.punishSingular}!`, 'wrong');
     }
     triggerReveal(); return;
@@ -1062,6 +1078,7 @@ function offlineChallengeGuess(choice) {
     G.sidePile.push(next);
     G.players[G.currentPlayerIndex].pushUps += 1;
     G.pendingPushUps = 1; G.turnPushUps += 1; G.phase = 'wrong'; G.passAfterPenalty = false;
+    G.lastGuessCorrect = false;
     showMsg(`🃏 Joker drawn! ${challengedName} does 1 ${G.punishSingular}!`, 'wrong');
     triggerReveal(); return;
   }
@@ -1074,11 +1091,13 @@ function offlineChallengeGuess(choice) {
     G.currentPlayerIndex = challengerIdx;
     G.players[challengerIdx].pushUps += 3;
     G.pendingPushUps = 3; G.turnPushUps = 3; G.streakPunishment = 0; G.phase = 'wrong'; G.passAfterPenalty = true;
+    G.lastGuessCorrect = true;
     showMsg(`✅ ${cardNameStr(next)} — ${challengedName} wins! ${challengerName} does 3 ${G.punishPlural}!`, 'correct');
   } else {
     // Challenged player wrong — always 1 push-up, turn returns to challenger after Done
     G.players[G.currentPlayerIndex].pushUps += 1;
     G.pendingPushUps = 1; G.turnPushUps += 1; G.phase = 'wrong'; G.passAfterPenalty = false;
+    G.lastGuessCorrect = false;
     showMsg(`❌ ${cardNameStr(next)}. ${challengedName} does 1 ${G.punishSingular}!`, 'wrong');
   }
   triggerReveal();
