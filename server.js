@@ -162,6 +162,14 @@ function handleLeave(socket, roomId) {
   if (room.players.length === 0) { cancelCountdown(room); rooms.delete(roomId); return; }
   if (room.hostSocketId === socket.id) room.hostSocketId = room.players[0].socketId;
   if (room.currentPlayerIndex >= room.players.length) room.currentPlayerIndex = 0;
+  if (room.challengedIdx !== null) {
+    if (idx === room.challengerId || idx === room.challengedIdx) {
+      room.challengerId = null; room.challengedIdx = null;
+    } else {
+      if (room.challengerId > idx) room.challengerId -= 1;
+      if (room.challengedIdx > idx) room.challengedIdx -= 1;
+    }
+  }
   room.penaltyQueue = room.penaltyQueue.filter(i => i !== idx).map(i => i > idx ? i - 1 : i);
   if (room.penaltyQueue.length === 0 && room.phase === 'others-penalty') { room.phase = 'guessing'; room.message = null; }
   if (room.status === 'lobby') cancelCountdown(room);
@@ -180,6 +188,7 @@ io.on('connection', socket => {
     const name = (playerName || 'Player').trim().slice(0, 20) || 'Player';
     let room = findQuickStartRoom();
     if (room) {
+      if (room.players.some(p => p.socketId === socket.id)) { socket.join(room.id); broadcast(room); return; }
       room.players.push({ socketId: socket.id, name, pushUps: 0, healthCards: [], challengesIssued: 0, ready: false, connected: true });
       cancelCountdown(room);
     } else {
@@ -193,6 +202,7 @@ io.on('connection', socket => {
     const room = rooms.get((roomId || '').toUpperCase().trim());
     if (!room)                    { socket.emit('error', 'Room not found'); return; }
     if (room.status !== 'lobby')  { socket.emit('error', 'Game already started'); return; }
+    if (room.players.some(p => p.socketId === socket.id)) { socket.join(room.id); broadcast(room); return; }
     if (room.players.length >= 10){ socket.emit('error', 'Room is full (max 10)'); return; }
     const name = (playerName || `Player ${room.players.length + 1}`).trim().slice(0, 20);
     room.players.push({ socketId: socket.id, name, pushUps: 0, healthCards: [], challengesIssued: 0, ready: false, connected: true });
@@ -469,7 +479,8 @@ io.on('connection', socket => {
 
   socket.on('reset-game', ({ roomId }) => {
     const room = rooms.get(roomId);
-    if (!room || room.hostSocketId !== socket.id || room.status !== 'playing') return;
+    if (!room || room.status !== 'playing') return;
+    if (room.hostSocketId !== socket.id) { socket.emit('error', 'Only the host can reset the game'); return; }
     room.players.forEach(p => { p.pushUps = 0; p.healthCards = []; p.challengesIssued = 0; });
     beginGame(room);
     broadcast(room);

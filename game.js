@@ -423,6 +423,7 @@ function startOfflineGame() {
   G.drawnCard          = null;
   G.revealFrom         = null;
   G.lastGuess          = null;
+  G.lastGuessCorrect   = null;
   G.turnPushUps        = 0;
   G.streakPunishment   = 0;
   G.message            = null;
@@ -440,6 +441,7 @@ function startOfflineGame() {
 // ── Game Menu ─────────────────────────────────────────────────────────────────
 function openGameMenu() {
   document.getElementById('game-menu').classList.remove('hidden');
+  document.getElementById('reset-game-item').classList.toggle('hidden', MODE === 'online' && !isHost);
 }
 
 function closeGameMenu() {
@@ -471,6 +473,7 @@ function resetOfflineGame() {
   G.drawnCard          = null;
   G.revealFrom         = null;
   G.lastGuess          = null;
+  G.lastGuessCorrect   = null;
   G.turnPushUps        = 0;
   G.streakPunishment   = 0;
   G.message            = null;
