@@ -62,6 +62,12 @@ const ACTION = {
     if (MODE === 'online') socket.emit('skip-penalty', { roomId: currentRoomId });
     else offlineSkipPenalty();
   },
+  async adSkipPenalty() {
+    const earned = await showRewardedToSkip();
+    if (!earned) return;
+    if (MODE === 'online') socket.emit('ad-skip-penalty', { roomId: currentRoomId });
+    else offlineAdSkipPenalty();
+  },
   confirmOtherDone(idx) {
     if (MODE === 'online') socket.emit('confirm-other-done', { roomId: currentRoomId });
     else offlineConfirmOther(idx);
@@ -85,7 +91,38 @@ const ACTION = {
   cancelChallenge() {
     document.getElementById('challenge-modal').classList.add('hidden');
   },
+  async buyRemoveAds() {
+    const priceEl = document.getElementById('remove-ads-price');
+    const ok = await purchaseRemoveAds();
+    if (ok) {
+      if (priceEl) priceEl.textContent = 'Purchased — thank you! Ads are now off.';
+      refreshRemoveAdsVisibility();
+    }
+  },
+  async restorePurchasesClick() {
+    const priceEl = document.getElementById('remove-ads-price');
+    await restorePurchases();
+    if (priceEl) priceEl.textContent = adsRemoved ? 'Purchased — thank you! Ads are now off.' : 'No previous purchase found.';
+    refreshRemoveAdsVisibility();
+  },
 };
+
+// ── Remove Ads UI ────────────────────────────────────────────────────────────────
+function refreshRemoveAdsVisibility() {
+  const show = ADS_IS_NATIVE && !adsRemoved;
+  document.getElementById('remove-ads-link')?.classList.toggle('hidden', !show);
+  document.getElementById('remove-ads-menu-item')?.classList.toggle('hidden', !show);
+}
+
+async function openRemoveAdsModal() {
+  document.getElementById('remove-ads-modal').classList.remove('hidden');
+  const priceEl = document.getElementById('remove-ads-price');
+  if (priceEl) priceEl.textContent = 'Loading price…';
+  const product = await fetchRemoveAdsProduct();
+  if (priceEl) priceEl.textContent = product ? `${product.title} — ${product.priceString}` : 'Unable to load price right now.';
+}
+
+refreshRemoveAdsVisibility();
 
 // ── Screen helpers ────────────────────────────────────────────────────────────
 function showScreen(id) {
@@ -264,11 +301,12 @@ function renderPunishmentPicker() {
   const picker = document.getElementById('punishment-picker');
   if (!picker) return;
   picker.innerHTML = '';
-  PUNISHMENT_PRESETS.forEach(preset => {
+  PUNISHMENT_PRESETS.forEach((preset, i) => {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'punish-chip' + (preset.id === selectedPunishId ? ' selected' : '');
-    btn.textContent = `${preset.icon} ${preset.label}`;
+    const accent = i % 2 === 0 ? 'accent-fire' : 'accent-purple';
+    btn.className = `punish-tile ${accent}` + (preset.id === selectedPunishId ? ' selected' : '');
+    btn.innerHTML = `<span class="punish-tile-icon">${preset.icon}</span><span class="punish-tile-label">${esc(preset.label)}</span>`;
     btn.onclick = () => {
       selectedPunishId = preset.id;
       renderPunishmentPicker();
@@ -548,8 +586,28 @@ function renderAll() {
   renderActionZone();
   renderPenaltyZone();
   renderSidePile();
+  renderHeatGauge();
   if (G.message) showMsg(G.message.text, G.message.type);
   else clearMsg();
+}
+
+const HEAT_GAUGE_MAX = 8; // heat level at which the gauge shows full
+
+function renderHeatGauge() {
+  const gauge = document.getElementById('heat-gauge');
+  const fill  = document.getElementById('heat-gauge-fill');
+  if (!gauge || !fill) return;
+  const heat = G.streakPunishment || 0;
+  gauge.classList.toggle('hidden', heat <= 0);
+  fill.style.height = `${Math.min(heat / HEAT_GAUGE_MAX, 1) * 100}%`;
+}
+
+function flashScreen(correct) {
+  const el = document.getElementById('screen-flash');
+  if (!el) return;
+  el.classList.remove('flash-correct', 'flash-wrong');
+  void el.offsetWidth;
+  el.classList.add(correct ? 'flash-correct' : 'flash-wrong');
 }
 
 function triggerReveal() {
@@ -557,9 +615,10 @@ function triggerReveal() {
   G.revealPause = true;
   renderAll();
   const nextEl = document.getElementById('next-card');
-  nextEl.classList.remove('reveal-anim');
+  nextEl.classList.remove('reveal-anim', 'glow-correct', 'glow-wrong');
   void nextEl.offsetWidth;
-  nextEl.classList.add('reveal-anim');
+  nextEl.classList.add('reveal-anim', G.lastGuessCorrect ? 'glow-correct' : 'glow-wrong');
+  flashScreen(!!G.lastGuessCorrect);
   setTimeout(() => {
     G.revealPause = false;
     G.revealFrom  = null;
@@ -781,6 +840,8 @@ function renderPenaltyZone() {
       if (penaltyRenderGen !== gen) return;
       if (p?.healthCards.length > 0)
         zone.appendChild(mkBtn('💚 Skip (use 1 health card)', 'btn btn-skip', () => ACTION.skipPenalty()));
+      if (canShowRewarded())
+        zone.appendChild(mkBtn('📺 Watch Ad to Skip', 'btn btn-outline', () => ACTION.adSkipPenalty()));
       zone.appendChild(mkBtn('Done ✓', 'btn btn-done', () => ACTION.donePenalty()));
     }, 550);
 
@@ -1020,6 +1081,31 @@ function offlineSkipPenalty() {
   }
 }
 
+function offlineAdSkipPenalty() {
+  const p = G.players[G.currentPlayerIndex];
+  p.pushUps -= G.pendingPushUps;
+  G.turnPushUps = Math.max(0, G.turnPushUps - G.pendingPushUps);
+  const passNext = G.passAfterPenalty;
+  const returnToChallenger = G.challengedIdx !== null;
+  G.pendingPushUps = 0; G.phase = 'guessing'; G.drawnCard = null; G.passAfterPenalty = false;
+  if (returnToChallenger) {
+    G.currentPlayerIndex = G.challengerId;
+    G.challengerId = null; G.challengedIdx = null;
+    G.turnPushUps = 0;
+  } else if (passNext) {
+    G.currentPlayerIndex = (G.currentPlayerIndex + 1) % G.players.length;
+    G.turnPushUps = 0; G.streakPunishment = 0;
+  }
+  showMsg(`📺 Ad watched! ${p.name} skips the penalty.`, 'health');
+  if (returnToChallenger) {
+    showHandoff(G.players[G.currentPlayerIndex].name, '⚡ Back to you, challenger!', renderAll);
+  } else if (passNext) {
+    showHandoff(G.players[G.currentPlayerIndex].name, 'Your turn!', renderAll);
+  } else {
+    renderAll();
+  }
+}
+
 function offlineChallenge(targetIdx) {
   AUDIO.challenge();
   G.turnPushUps = 0;
@@ -1169,6 +1255,7 @@ function offlineEndGame() {
 
 function renderEndScreen() {
   spawnConfetti();
+  maybeShowInterstitialAfterGame();
 
   const trophy = document.getElementById('end-trophy');
   if (trophy) {
