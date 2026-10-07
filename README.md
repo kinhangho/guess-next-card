@@ -2,6 +2,21 @@
 
 A pass-the-phone card game — wrong guesses mean punishment reps (push-ups, squats, or whatever the group decides).
 
+> ### THE RULES ARE SIMPLE, THE PRESSURE ISN'T
+> - Number card up? Guess Higher, Lower, or Joker.
+> - Face card up? Guess Red, Black, or Joker.
+> - Right guess: pass the phone or keep going.
+> - Wrong guess: pay the penalty, then guess again.
+>
+> ### IT ESCALATES FAST
+> - Heat climbs every time someone pushes their luck instead of passing — and it doesn't reset until somebody misses. Whoever that is pays for everyone's confidence.
+> - Not feeling a card? Challenge someone else to guess in your place. Call it right and it's your win. Call it wrong and you're covering triple.
+> - Guess Joker correctly and the whole table pays but you. Get caught off guard by one and you're the only one paying.
+> - Health Cards turn up at random — hold one to dodge a penalty, hold two to sneak a peek at what's coming next.
+>
+> ### SET YOUR OWN STAKES
+> Before you start, pick what losing costs: push-ups, sit-ups, squats, a timed plank, or write your own. Everyone picks an avatar — snap a photo or grab one of 30 emoji — and a live scoreboard keeps score of who's losing the hardest.
+
 ## How to Play
 
 1. Pick **2–10 players**, set names, choose an avatar (emoji or photo), and pick a **punishment type**.

@@ -18,6 +18,14 @@
   --blue:        #3B82F6;
   --blue-dim:    rgba(59,130,246,.12);
   --purple:      #7C3AED;
+  /* HOT DECK palette (styleguide) */
+  --hd-yellow:   #FFB800;
+  --hd-orange:   #FF6A00;
+  --hd-red:      #FF2D2D;
+  --hd-purple:   #A855FF;
+  --hd-magenta:  #FF2EDC;
+  --hd-blue:     #1A2BFF;
+  --hd-safe:     #2ED06E;
   --text-hi:     #EDEEF8;
   --text-mid:    #8E8FAA;
   --text-lo:     #50527A;
@@ -1169,6 +1177,33 @@ body {
   scrollbar-width: thin;
   scrollbar-color: var(--border-hi) transparent;
 }
+.htp-hook { margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1.5px solid var(--border); }
+.htp-hook-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  line-height: 1.15;
+  color: var(--hd-yellow);
+  text-shadow: 0 0 14px rgba(255,184,0,.35);
+  margin: 14px 0 8px;
+}
+.htp-hook-title:first-child { margin-top: 0; }
+.htp-hook-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.htp-hook-list li {
+  position: relative;
+  padding-left: 18px;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: var(--text-mid);
+}
+.htp-hook-list li::before {
+  content: '🔥';
+  position: absolute;
+  left: 0; top: 0.05em;
+  font-size: 0.72rem;
+}
+.htp-hook-list li strong { color: var(--text-hi); }
 .htp-section { margin-bottom: 16px; }
 .htp-section:last-child { margin-bottom: 0; }
 .htp-heading {
@@ -1357,6 +1392,101 @@ body {
   .player-entry .pstats { font-size: 2.4rem; }
   .action-bar { padding-left: 24px; padding-right: 24px; }
   .action-bar .btn-row .btn { font-size: 1.05rem; }
+}
+
+/* ── HOT DECK: wordmark ── */
+.hd-logo {
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: 900;
+  text-align: center;
+  line-height: 0.95;
+  letter-spacing: 0.5px;
+  color: var(--hd-yellow);
+  text-shadow: 0 0 18px rgba(255,184,0,.5), 0 0 36px rgba(255,106,0,.3);
+}
+.hd-logo-deck { color: var(--hd-purple); text-shadow: 0 0 18px rgba(168,85,255,.5); }
+.hd-logo-sm { font-size: 1.9rem; }
+.hd-tagline { color: var(--text-mid); text-align: center; }
+
+.btn-fire {
+  background: linear-gradient(135deg, var(--hd-yellow) 0%, var(--hd-orange) 100%);
+  color: #1A0A00;
+  font-weight: 800;
+  box-shadow: 0 0 18px rgba(255,106,0,.4);
+}
+.btn-fire:hover { filter: brightness(1.08); }
+
+/* ── HOT DECK: Blaze mascot ── */
+.blaze-mascot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 320px;
+  width: 100%;
+}
+.blaze-img {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid var(--hd-orange);
+  box-shadow: 0 0 14px rgba(255,106,0,.45);
+  background: var(--surface-2);
+}
+.blaze-speech {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-hi);
+  background: var(--surface-2);
+  border: 1.5px solid var(--border-hi);
+  border-radius: var(--r-md);
+  padding: 7px 12px;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+/* ── HOT DECK: Danger Meter ── */
+.danger-meter {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.dm-track {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 5px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.05);
+  border: 1.5px solid var(--border-hi);
+}
+.dm-seg {
+  width: 16px;
+  height: 10px;
+  border-radius: 3px;
+  background: rgba(255,255,255,.08);
+  transition: background .25s, box-shadow .25s;
+}
+.dm-seg.lit {
+  background: var(--seg-color, var(--hd-orange));
+  box-shadow: 0 0 8px var(--seg-color, var(--hd-orange));
+}
+.dm-label {
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--text-mid);
+  text-transform: uppercase;
 }
 
 /* ── Focus / accessibility ── */

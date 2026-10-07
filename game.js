@@ -587,8 +587,45 @@ function renderAll() {
   renderPenaltyZone();
   renderSidePile();
   renderHeatGauge();
+  renderDangerMeter();
+  renderBlazeMascot();
   if (G.message) showMsg(G.message.text, G.message.type);
   else clearMsg();
+}
+
+// ── HOT DECK: Danger Meter — visualizes the heat/streak level (10-level gauge) ──
+function renderDangerMeter() {
+  const meter = document.getElementById('danger-meter');
+  if (!meter) return;
+  if (MODE !== 'offline') { meter.classList.add('hidden'); return; }
+  meter.classList.remove('hidden');
+  const level = Math.min(G.streakPunishment || 0, 10);
+  const band = dangerBandFor(Math.max(level, 1));
+  const segs = meter.querySelectorAll('.dm-seg');
+  segs.forEach(seg => {
+    const lvl = parseInt(seg.dataset.level, 10);
+    seg.classList.toggle('lit', lvl <= level);
+    seg.style.setProperty('--seg-color', dangerBandFor(lvl).color);
+  });
+  const labelEl = document.getElementById('danger-meter-label');
+  if (labelEl) labelEl.textContent = level > 0 ? band.label : '';
+}
+
+// ── HOT DECK: Blaze mascot reaction ──────────────────────────────────────────
+function renderBlazeMascot() {
+  const imgEl = document.getElementById('blaze-img');
+  const speechEl = document.getElementById('blaze-speech');
+  if (!imgEl || !speechEl) return;
+  let state;
+  if (G.revealPause && G.lastGuess === 'joker' && G.lastGuessCorrect) state = 'joker';
+  else if (G.revealPause && G.lastGuessCorrect) state = 'correct';
+  else if (G.phase === 'wrong') state = 'burned';
+  else state = blazeStateForDanger(Math.min(G.streakPunishment || 0, 10));
+  if (imgEl.dataset.state === state) return;
+  const { img, text } = blazeLine(state);
+  imgEl.src = img;
+  imgEl.dataset.state = state;
+  speechEl.textContent = text;
 }
 
 const HEAT_GAUGE_MAX = 8; // heat level at which the gauge shows full

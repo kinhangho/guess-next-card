@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Dare Dare Dare</title>
+  <title>HOT DECK</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- non-render-blocking font load: page paints immediately, fonts swap in when ready -->
@@ -16,12 +16,11 @@
 <!-- ── Home Screen ── -->
 <div id="home-screen">
   <div class="setup-box">
-    <div class="logo">🃏</div>
-    <h1>Dare Dare Dare</h1>
-    <p class="subtitle">A push-up card game</p>
+    <div class="hd-logo">HOT <span class="hd-logo-deck">DECK</span></div>
+    <p class="subtitle hd-tagline">Same friends. Bigger risks. Hotter nights.</p>
     <div class="home-btn-col">
-      <button id="online-btn" class="btn btn-gold btn-wide" onclick="showScreen('online-screen'); initSocket()">🌐 Play Online</button>
-      <button class="btn btn-outline btn-wide" onclick="showScreen('setup-screen'); initOfflineSetup()">👥 Play Offline</button>
+      <button class="btn btn-fire btn-wide" onclick="showScreen('setup-screen'); initOfflineSetup()">🔥 Quick Play</button>
+      <button id="online-btn" class="btn btn-outline btn-wide" onclick="showScreen('online-screen'); initSocket()">🌐 Play Online</button>
       <button class="btn btn-ghost btn-wide" onclick="document.getElementById('how-to-play-modal').classList.remove('hidden')">📖 How to Play</button>
     </div>
     <button id="remove-ads-link" class="btn-ghost-link hidden" onclick="openRemoveAdsModal()">🚫 Remove Ads</button>
@@ -105,9 +104,7 @@
 <div id="setup-screen" class="hidden">
   <div class="setup-box">
     <button class="back-btn" onclick="showScreen('home-screen')">← Back</button>
-    <div class="logo">🃏</div>
-    <h1>Dare Dare Dare</h1>
-    <p class="subtitle">A push-up card game</p>
+    <div class="hd-logo hd-logo-sm">BUILD YOUR <span class="hd-logo-deck">CREW</span></div>
 
     <h2>How many players?</h2>
     <div class="count-row" id="count-row"></div>
@@ -120,7 +117,7 @@
       <div id="custom-punish-row" class="hidden">
         <input id="custom-punish-input" class="text-input" type="text" placeholder="e.g. burpees" maxlength="20" />
       </div>
-      <button class="btn btn-gold btn-wide" onclick="startOfflineGame()">▶ Start Game</button>
+      <button class="btn btn-fire btn-wide" onclick="startOfflineGame()">▶ Start Game</button>
     </div>
   </div>
 </div>
@@ -140,9 +137,24 @@
       <div class="heat-gauge-flame">🔥</div>
       <div class="heat-gauge-track"><div id="heat-gauge-fill" class="heat-gauge-fill"></div></div>
     </div>
+    <div id="danger-meter" class="danger-meter hidden">
+      <div class="dm-track">
+        <div class="dm-seg" data-level="10"></div>
+        <div class="dm-seg" data-level="9"></div>
+        <div class="dm-seg" data-level="8"></div>
+        <div class="dm-seg" data-level="7"></div>
+        <div class="dm-seg" data-level="6"></div>
+        <div class="dm-seg" data-level="5"></div>
+        <div class="dm-seg" data-level="4"></div>
+        <div class="dm-seg" data-level="3"></div>
+        <div class="dm-seg" data-level="2"></div>
+        <div class="dm-seg" data-level="1"></div>
+      </div>
+      <div id="danger-meter-label" class="dm-label"></div>
+    </div>
     <div class="felt-inner">
       <div class="top-bar">
-        <span class="game-name">🃏 Dare Dare Dare</span>
+        <span class="game-name">🔥 HOT DECK</span>
         <div style="display:flex;gap:6px;align-items:center">
           <span id="joker-status" class="deck-badge hidden"></span>
           <span id="deck-count" class="deck-badge">56 cards</span>
@@ -150,6 +162,10 @@
         </div>
       </div>
       <div id="turn-banner" class="turn-banner"></div>
+      <div class="blaze-mascot">
+        <img id="blaze-img" class="blaze-img" src="img/hotdeck/blaze-confident.png" alt="Blaze" />
+        <div id="blaze-speech" class="blaze-speech"></div>
+      </div>
       <div class="table-area">
         <div class="card-station">
           <div class="card-label" id="label-current">Current</div>
@@ -209,6 +225,27 @@
   <div class="modal-box htp-box" onclick="event.stopPropagation()">
     <h2>📖 How to Play</h2>
     <div class="htp-scroll">
+      <div class="htp-hook">
+        <div class="htp-hook-title">THE RULES ARE SIMPLE,<br>THE PRESSURE ISN'T</div>
+        <ul class="htp-hook-list">
+          <li>Number card up? Guess <strong>Higher</strong>, <strong>Lower</strong>, or <strong>Joker</strong>.</li>
+          <li>Face card up? Guess <strong>Red</strong>, <strong>Black</strong>, or <strong>Joker</strong>.</li>
+          <li>Right guess: pass the phone or keep going.</li>
+          <li>Wrong guess: pay the penalty, then guess again.</li>
+        </ul>
+        <div class="htp-hook-title">IT ESCALATES FAST</div>
+        <ul class="htp-hook-list">
+          <li>Heat climbs every time someone pushes their luck instead of passing — and it doesn't reset until somebody misses. Whoever that is pays for everyone's confidence.</li>
+          <li>Not feeling a card? <strong>Challenge</strong> someone else to guess in your place. Call it right and it's your win. Call it wrong and you're covering triple.</li>
+          <li>Guess <strong>Joker</strong> correctly and the whole table pays but you. Get caught off guard by one and you're the only one paying.</li>
+          <li><strong>Health Cards</strong> turn up at random — hold one to dodge a penalty, hold two to sneak a peek at what's coming next.</li>
+        </ul>
+        <div class="htp-hook-title">SET YOUR OWN STAKES</div>
+        <ul class="htp-hook-list">
+          <li>Before you start, pick what losing costs: push-ups, sit-ups, squats, a timed plank, or write your own.</li>
+          <li>Everyone picks an avatar — snap a photo or grab one of 30 emoji — and a live scoreboard keeps score of who's losing the hardest.</li>
+        </ul>
+      </div>
       <div class="htp-section">
         <div class="htp-heading">The Deck (56 cards)</div>
         <div class="htp-row"><span class="htp-icon">🂠</span><span class="htp-text">52 standard cards (A–K × ♥♦♣♠) · 2 Health Cards · 1 Red Joker · 1 Black Joker</span></div>
@@ -319,6 +356,7 @@
 <script src="js/socket.io.min.js"></script>
 <script src="sounds.js"></script>
 <script src="ads.js"></script>
+<script src="hotdeck-config.js"></script>
 <script src="game.js"></script>
 </body>
 </html>
