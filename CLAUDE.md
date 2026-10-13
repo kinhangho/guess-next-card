@@ -2,9 +2,23 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project: Dare Dare Dare
+## Project: Bank or Burn
 
-A browser-based multiplayer poker card game named **"Dare Dare Dare"**.
+A browser-based multiplayer poker card game. Originally built and shipped as **"Dare Dare Dare"**; the player-facing brand was renamed to **"Bank or Burn"** (see README.md for why — a trademark conflict with an earlier rename attempt). The rename touched only visible text (title, wordmark, in-game header) — bundle ID (`com.kinhang.guessnextcard`), package name, internal file names, and every game rule below are unchanged from the original "Dare Dare Dare" implementation. Don't be confused by "Dare Dare Dare" still appearing in bundle IDs, native Info.plist display name, or old filenames — that's expected, not a bug.
+
+---
+
+## Icons — inline SVG only, one deliberate exception
+
+Every UI icon (buttons, badges, menu, modals) is inline SVG via `ICON_PATHS` + `icn()` in `game.js`, with static HTML using `<span data-icn="name"></span>` placeholders hydrated by `hydrateStaticIcons()` on load. **Never add a new UI icon as emoji or a Unicode symbol character.** This was verified directly, not assumed: the native iOS WKWebView (Capacitor) fails to fall back to any system glyph for characters outside the loaded web fonts — confirmed broken for plain emoji, emoji explicitly forced to `-apple-system`, emoji forced to `'Apple Color Emoji'`, and at normal font-weight (ruling out a bold-font theory). All four rendered as an identical blank "?" box on an iOS Simulator build.
+
+**Exception, and an important caveat about where you test it:** the 30-option avatar picker (`EMOJI_AVATAR_LIST` in `game.js`) is real emoji on purpose, restored after a real iOS device (not the Simulator) showed it rendering correctly — directly contradicting the Simulator-based testing above. The Simulator appears to have its own font-loading quirk for this specific case that doesn't reflect real-device behavior. **If you're debugging icon/emoji rendering, test on a physical device before concluding something is broken** — for this one question, the Simulator is not trustworthy, even though it's fine for everything else (layout, color, animation, etc.). See README.md's "Running Locally" section for the real-device build/install commands (`xcrun devicectl`).
+
+---
+
+## Blaze mascot & Danger Meter
+
+Offline play shows a fox mascot ("Blaze") and a 10-segment vertical meter above the card table — both purely cosmetic, left over from an abandoned "Hot Deck" push-your-luck redesign that was fully reverted back to the original rules below. They now just visualize the existing heat counter (`G.streakPunishment`, capped at 10) and react to game events (correct/wrong/Joker) with a reaction image + one-line dialogue. Config (color bands, dialogue pool) lives in `hotdeck-config.js` at the repo root — the filename is a leftover from the redesign attempt; it was not renamed because the churn wasn't worth it for a file that's just mascot/color config now.
 
 ---
 
@@ -131,7 +145,7 @@ Each time the current player presses **Continue** (guessing again after a correc
 
 ## Dice Display
 
-When a player owes reps, the penalty zone shows Unicode dice faces (⚀–⚅) representing the **cumulative reps this turn** (`G.turnPushUps`) alongside the current penalty count. Multiple dice stack when the total exceeds 6.
+When a player owes reps, the penalty zone shows a row of dot icons (`diceDisplay()` in `game.js`, capped at 12) representing the **cumulative reps this turn** (`G.turnPushUps`) alongside the current penalty count. Previously rendered as Unicode dice-face characters (⚀–⚅); switched to SVG dots for the same reason described in "Icons" above.
 
 ---
 

@@ -1,6 +1,6 @@
-# Dare Dare Dare
+# Bank or Burn
 
-A pass-the-phone card game — wrong guesses mean punishment reps (push-ups, squats, or whatever the group decides).
+A pass-the-phone card game — wrong guesses mean punishment reps (push-ups, squats, or whatever the group decides). Originally built as "Dare Dare Dare"; renamed to avoid a trademark conflict with an existing card game called "Hot Deck" (an earlier working name for this rebrand — see `CLAUDE.md` for the history). The rename is cosmetic only: bundle ID, package name, and internal file names still say `guessnextcard`/`Dare Dare Dare` and haven't been touched.
 
 > ### THE RULES ARE SIMPLE, THE PRESSURE ISN'T
 > - Number card up? Guess Higher, Lower, or Joker.
@@ -49,11 +49,15 @@ The chosen label replaces every "push-up" reference throughout the game. The sel
 | Correct Joker guess → all other players | 2 each |
 | Wrong Joker guess / unexpected Joker → current player | 2 |
 
-Penalty counts are shown as dice faces (⚀–⚅) in the penalty zone.
+Penalty counts are shown as a row of dot icons in the penalty zone.
 
 ## Heat / Streak
 
 Every **Continue** adds 1 🔥 heat to a shared counter. Heat carries across turns — it doesn't reset when the turn passes. Whoever next **gets a guess wrong** pays their normal penalty **plus all accumulated heat**. The heat banner shows in the guess zone so everyone knows the risk.
+
+## Blaze & the Danger Meter
+
+A fox mascot ("Blaze") and a 10-segment vertical meter sit above the card table during offline play. Both are purely visual — they track the current heat level (capped at 10) and react to game events (correct guess, wrong guess, Joker call) with a short reaction image + one-line speech bubble. No gameplay effect; it's reading the same `streakPunishment` heat counter described above. Config (color bands, dialogue lines) lives in `hotdeck-config.js` — a leftover name from the Hot Deck rebrand attempt, kept because renaming it isn't worth the churn.
 
 ## Deck (56 cards)
 
@@ -117,15 +121,32 @@ the default push-up labels. Available on web and in the native iOS app.
 - **Mobile**: Capacitor (iOS)
 - **Sound**: Web Audio API (procedural sound effects, no audio files)
 
+## Icons — SVG only, with one deliberate exception
+
+Every button/badge/menu icon in the app is an inline SVG (`ICON_PATHS` + `icn()` in `game.js`, hydrated from `data-icn="name"` placeholders in static HTML via `hydrateStaticIcons()`). **Do not use emoji or Unicode symbol characters for new UI icons.** This isn't a style preference — it was tested directly: the native iOS WKWebView (Capacitor) fails to fall back to a system glyph for *any* character outside the loaded web fonts, not just color emoji (a plain `☰` rendered blank too). Confirmed broken across four font-stack variants (plain, `-apple-system`, `'Apple Color Emoji'`, normal font-weight) on an iOS Simulator build.
+
+**The one exception**: the 30-option avatar emoji picker (`EMOJI_AVATAR_LIST` in `game.js`) *is* real emoji, on purpose. A real-device screenshot (not simulator) showed it rendering correctly, which contradicted the simulator-only testing above — the Simulator itself appears to have a separate font-loading quirk that doesn't reflect real-device behavior for this specific case. If you're investigating an icon-rendering bug, **test on a physical device before concluding emoji are broken** — the Simulator is not a reliable signal for this one question, even though it is for everything else.
+
 ## Project Layout
 
 `server.js` serves static assets from `public/` (`webDir` in `capacitor.config.json`
 also points here) — that's the single source of truth for the web client.
-`game.js`, `index.html`, and `style.css` at the repo root are kept as synced
-copies for convenience when opening the file directly; always edit under
-`public/` and re-copy, don't edit the root copies in place. Run `npx cap copy ios`
-after any `public/` change to keep the bundled iOS build (`ios/App/App/public/`)
-in sync.
+`game.js`, `index.html`, `style.css`, `hotdeck-config.js`, and `support.html` at
+the repo root are kept as synced copies for convenience when opening the file
+directly; always edit under `public/` and re-copy, don't edit the root copies
+in place. Run `npx cap copy ios` after any `public/` change to keep the bundled
+iOS build (`ios/App/App/public/`) in sync — and run a full `xcodebuild` (not
+just `cap copy`) before trusting a device/simulator test, since the already-built
+`.app` doesn't pick up `public/` changes until rebuilt.
+
+For a real-device build (required to test the emoji avatar picker — see Icons
+above), find the connected device with `xcrun xctrace list devices`, build with
+`-destination 'platform=iOS,id=<udid>' -allowProvisioningUpdates`, then install
+with `xcrun devicectl device install app --device <udid> <path-to-.app>` and
+launch with `xcrun devicectl device process launch --device <udid> <bundle-id>`.
+Automatic signing is already configured (`DEVELOPMENT_TEAM` in the Xcode
+project) — no manual certificate/profile setup needed if the device is already
+registered to that team.
 
 ## Running Locally
 

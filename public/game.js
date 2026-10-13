@@ -393,9 +393,13 @@ const EMOJI_AVATAR_LIST = [
 let setupAvatars = {};     // { 1: '🦁', 2: 'data:image/...', ... }
 let avatarEditingIdx = null;
 
-// Emoji avatars don't render reliably in the native WebView (same root cause
-// as every other icon fix this pass) — fall back to a colored initial.
-const AVATAR_COLORS = ['#F2AD00','#FF6A00','#7C3AED','#00C875','#3B82F6','#FF2EDC','#EF4444','#22D3EE'];
+// Colored-initial fallback for when there's genuinely no avatar value at all
+// (shouldn't normally happen since every player gets a default emoji).
+const AVATAR_COLORS = [
+  '#F2AD00','#FF6A00','#FF2D2D','#FF2EDC','#A855FF','#7C3AED',
+  '#3B82F6','#22D3EE','#00C875','#84CC16','#EAB308','#F97316',
+  '#EF4444','#EC4899','#8B5CF6','#6366F1','#14B8A6','#84714D',
+];
 function avatarColorFor(name) {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
@@ -405,9 +409,9 @@ function avatarHTML(avatar, cls, name) {
   if (avatar && avatar.startsWith('data:')) {
     return `<div class="${cls}" style="background-image:url('${avatar}');background-size:cover;background-position:center;font-size:0"></div>`;
   }
+  if (avatar) return `<div class="${cls}">${avatar}</div>`;
   const label = esc((name || '?').trim().charAt(0).toUpperCase() || '?');
-  const color = avatarColorFor(name || '?');
-  return `<div class="${cls} avatar-initial" style="background:${color}">${label}</div>`;
+  return `<div class="${cls} avatar-initial" style="background:${avatarColorFor(name || '?')}">${label}</div>`;
 }
 
 function openAvatarPicker(idx) {
@@ -468,13 +472,10 @@ function _refreshAvBtn(idx) {
     btn.classList.add('has-photo');
     btn.classList.remove('avatar-initial');
   } else {
-    // Emoji avatars don't render reliably in the native WebView — show a
-    // colored player number instead (matches avatarHTML's fallback).
     btn.style.backgroundImage = '';
-    btn.textContent = idx;
-    btn.style.background = avatarColorFor(String(idx));
-    btn.classList.add('avatar-initial');
-    btn.classList.remove('has-photo');
+    btn.style.background = '';
+    btn.textContent = av;
+    btn.classList.remove('has-photo', 'avatar-initial');
   }
 }
 
@@ -505,7 +506,7 @@ function selectCount(n, btn) {
     const row = document.createElement('div');
     row.className = 'player-setup-row';
     row.innerHTML = `
-      <button class="av-btn avatar-initial" id="av-btn-${i}" type="button" onclick="openAvatarPicker(${i})" style="background:${avatarColorFor(String(i))}">${i}</button>
+      <button class="av-btn" id="av-btn-${i}" type="button" onclick="openAvatarPicker(${i})">${emoji}</button>
       <input type="text" placeholder="Player ${i}" value="Player ${i}" id="pname-${i}" />
     `;
     inp.appendChild(row);
