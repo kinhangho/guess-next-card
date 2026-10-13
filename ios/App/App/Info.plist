@@ -31,7 +31,7 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Dare Dare Dare lets you pick a photo from your library to use as your player avatar.</string>
 	<key>NSUserTrackingUsageDescription</key>
-	<string>This identifier will be used to show you more relevant ads and support free play of Dare Dare Dare.</string>
+	<string>This identifier will be used to show you more relevant ads and support free play of Bank or Burn.</string>
 	<key>GADIsAdManagerApp</key>
 	<true/>
 	<!-- TODO before release: replace with your real AdMob App ID from admob.google.com -->
