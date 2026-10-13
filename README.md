@@ -10,7 +10,7 @@ A pass-the-phone card game — wrong guesses mean punishment reps (push-ups, squ
 >
 > ### IT ESCALATES FAST
 > - Heat climbs every time someone pushes their luck instead of passing — and it doesn't reset until somebody misses. Whoever that is pays for everyone's confidence.
-> - Not feeling a card? Challenge someone else to guess in your place. Call it right and it's your win. Call it wrong and you're covering triple.
+> - Not feeling a card? Challenge someone else to guess in your place. They call it wrong and you're in the clear. They call it right and you're covering triple.
 > - Guess Joker correctly and the whole table pays but you. Get caught off guard by one and you're the only one paying.
 > - Health Cards turn up at random — hold one to dodge a penalty, hold two to sneak a peek at what's coming next.
 >

@@ -310,7 +310,7 @@ body {
   padding: 10px 14px;
   font-size: 0.9rem;
 }
-.lobby-player.host .lp-name::after { content: ' 👑'; }
+.lobby-player.host .lp-name::after { content: ' (Host)'; font-size: 0.72em; color: var(--gold); font-weight: 700; }
 .lp-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-mid); flex-shrink: 0; transition: background .2s; }
 .lobby-player.ready .lp-dot { background: var(--correct); }
 .lp-name { font-weight: 700; }
@@ -376,6 +376,12 @@ body {
 }
 .av-btn:active { transform: scale(.93); }
 .av-btn.has-photo { border-style: solid; border-color: var(--gold); }
+.avatar-initial {
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-shadow: 0 1px 2px rgba(0,0,0,.35);
+}
 
 /* Small avatar circle — scoreboard chip, challenge picker */
 .av-sm {
@@ -767,7 +773,15 @@ body {
   padding: 10px 4px;
 }
 .punish-tile:active { transform: scale(.95); }
-.punish-tile-icon { font-size: 1.7rem; line-height: 1; }
+.punish-tile-icon {
+  font-size: 1.7rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+.punish-tile-icon .icn { vertical-align: 0; }
 .punish-tile-label {
   font-family: var(--font-display);
   font-size: 0.66rem;
@@ -993,6 +1007,22 @@ body {
   text-align: center;
 }
 
+/* ── Inline SVG icons (replace emoji — see game.js ICON_PATHS) ── */
+.icn {
+  width: 1.1em;
+  height: 1.1em;
+  flex-shrink: 0;
+  vertical-align: -0.18em;
+  display: inline-block;
+}
+.icn-lg { width: 1.6em; height: 1.6em; }
+.icn-sm { width: 0.9em; height: 0.9em; }
+.side-dot-red { display: inline-flex; color: #CC1111; }
+.side-dot-black { display: inline-flex; color: #1A1A1A; }
+.medal-gold { color: #FFD23F; }
+.medal-silver { color: #C7CDD6; }
+.medal-bronze { color: #CD7F32; }
+
 /* ── Button rows ── */
 .btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 
@@ -1025,7 +1055,7 @@ body {
   0%, 100% { border-color: #F97316; box-shadow: 0 0 14px rgba(249,115,22,.25); }
   50%       { border-color: #EF4444; box-shadow: 0 0 20px rgba(239,68,68,.45); }
 }
-.heat-dice { font-size: 1.4rem; letter-spacing: 4px; }
+.heat-dice { display: inline-flex; align-items: center; gap: 4px; color: #FB923C; }
 .heat-text { font-size: 0.75rem; font-weight: 700; color: #FB923C; line-height: 1.35; }
 
 /* ── Inherited penalty label ── */
@@ -1037,9 +1067,14 @@ body {
 }
 
 .penalty-zone .dice-row {
-  font-size: 2.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 1.8rem;
+  color: var(--fire);
   line-height: 1;
-  letter-spacing: 6px;
   animation: dice-pop .32s cubic-bezier(.34,1.4,.64,1) both;
 }
 @keyframes dice-pop {
@@ -1198,10 +1233,13 @@ body {
   color: var(--text-mid);
 }
 .htp-hook-list li::before {
-  content: '🔥';
+  content: '';
   position: absolute;
-  left: 0; top: 0.05em;
-  font-size: 0.72rem;
+  left: 2px; top: 0.5em;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--hd-orange);
+  box-shadow: 0 0 6px rgba(255,106,0,.6);
 }
 .htp-hook-list li strong { color: var(--text-hi); }
 .htp-section { margin-bottom: 16px; }
@@ -1406,6 +1444,17 @@ body {
   text-shadow: 0 0 18px rgba(255,184,0,.5), 0 0 36px rgba(255,106,0,.3);
 }
 .hd-logo-deck { color: var(--hd-purple); text-shadow: 0 0 18px rgba(168,85,255,.5); }
+.hd-logo-or {
+  display: inline-block;
+  font-size: 0.42em;
+  font-weight: 700;
+  color: var(--text-mid);
+  text-shadow: none;
+  text-transform: lowercase;
+  vertical-align: middle;
+  margin: 0 1px;
+}
+.hd-logo-burn { color: var(--hd-red); text-shadow: 0 0 18px rgba(255,45,45,.5), 0 0 36px rgba(255,106,0,.25); }
 .hd-logo-sm { font-size: 1.9rem; }
 .hd-tagline { color: var(--text-mid); text-align: center; }
 
@@ -1506,3 +1555,4 @@ body {
   .heat-gauge-flame { animation: none; }
   .card.glow-correct::before, .card.glow-wrong::before { animation: none; opacity: 0; }
 }
+

@@ -1,3 +1,58 @@
+// ── Icons ─────────────────────────────────────────────────────────────────────
+// Inline SVG, not emoji/Unicode symbols. The native iOS WKWebView (Capacitor)
+// fails to fall back to a system glyph for ANY character outside the loaded
+// web fonts' coverage — not just color emoji, plain symbol-block characters
+// (e.g. U+2630 ☰) render blank too. SVG paints identically everywhere.
+const ICON_PATHS = {
+  flame:      '<path d="M12 2c1 3-2 4.5-2 8a4 4 0 0 0 8 0c0-1.2-.5-2-1-2.3 1 3.6-1 5.3-2.8 5.3A2.7 2.7 0 0 1 11.5 10c0-1.8 1.8-2.7 1-4.6A5 5 0 0 0 9.5 10c0 3.3 2.7 6 6 6"/>',
+  dumbbell:   '<rect x="2.5" y="9" width="3" height="6" rx="1"/><rect x="18.5" y="9" width="3" height="6" rx="1"/><line x1="5.5" y1="12" x2="18.5" y2="12"/>',
+  check:      '<polyline points="20 6 9 17 4 12"/>',
+  checkCircle:'<circle cx="12" cy="12" r="9"/><polyline points="16 9 10.5 15 8 12.5"/>',
+  x:          '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  xCircle:    '<circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>',
+  dot:        '<circle cx="12" cy="12" r="7" fill="currentColor" stroke="none"/>',
+  zap:        '<polygon points="12.5 2 4 14 11 14 10.5 22 19 10 12 10 12.5 2"/>',
+  heart:      '<path d="M20 4.6a5.5 5.5 0 0 0-7.8 0l-.2.2-.2-.2a5.5 5.5 0 0 0-7.8 7.8L12 20.6l8-8.2A5.5 5.5 0 0 0 20 4.6z"/>',
+  tv:         '<rect x="2" y="6" width="20" height="14" rx="2"/><polyline points="16 2 12 6 8 2"/>',
+  globe:      '<circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3c2.5 2.5 4 5.8 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.8-4-9s1.5-6.5 4-9z"/>',
+  book:       '<path d="M4 19V4.5A1.5 1.5 0 0 1 5.5 3H19a1 1 0 0 1 1 1v15"/><path d="M4 19a2 2 0 0 0 2 2h14"/><path d="M4 19a2 2 0 0 1 2-2h14"/>',
+  ban:        '<circle cx="12" cy="12" r="9"/><line x1="5.5" y1="5.5" x2="18.5" y2="18.5"/>',
+  trophy:     '<path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M5 4H3v2a4 4 0 0 0 4 4M19 4h2v2a4 4 0 0 1-4 4"/><path d="M9 21h6M12 17v4"/>',
+  gamepad:    '<rect x="2" y="7" width="20" height="11" rx="4"/><line x1="7" y1="12.5" x2="7" y2="12.51"/><line x1="6" y1="11.5" x2="6" y2="13.5" transform="rotate(90 7 12.5)"/><circle cx="16" cy="11" r="1" fill="currentColor" stroke="none"/><circle cx="18" cy="13.5" r="1" fill="currentColor" stroke="none"/>',
+  user:       '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  camera:     '<path d="M22 18.5a1.5 1.5 0 0 1-1.5 1.5h-17A1.5 1.5 0 0 1 2 18.5V8a1.5 1.5 0 0 1 1.5-1.5h3l1.5-2.5h8L17.5 6.5h3A1.5 1.5 0 0 1 22 8z"/><circle cx="12" cy="13" r="3.5"/>',
+  menu:       '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>',
+  clock:      '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/>',
+  eye:        '<path d="M1 12s4-7.5 11-7.5S23 12 23 12s-4 7.5-11 7.5S1 12 1 12z"/><circle cx="12" cy="12" r="3"/>',
+  medal:      '<circle cx="12" cy="15" r="6"/><path d="M8.5 9.5 6 2h2.5l3.5 6.3M15.5 9.5 18 2h-2.5l-3.5 6.3"/>',
+  sparkle:    '<path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/>',
+  edit:       '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  crown:      '<path d="M3 18h18M4.5 18 3 8l5 4 4-7 4 7 5-4-1.5 10"/>',
+  chart:      '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+  star:       '<polygon points="12 2 14.8 8.8 22 9.5 16.5 14.3 18.2 21.5 12 17.7 5.8 21.5 7.5 14.3 2 9.5 9.2 8.8"/>',
+  refresh:    '<polyline points="22 5 22 10 17 10"/><polyline points="2 19 2 14 7 14"/><path d="M3.5 9.5A9 9 0 0 1 19 6.5L22 10M2 14l3.5 3.5a9 9 0 0 0 15-3"/>',
+  play:       '<polygon points="6 3 20 12 6 21 6 3"/>',
+  triUp:      '<polygon points="12 4 20 18 4 18"/>',
+  triDown:    '<polygon points="12 20 4 6 20 6"/>',
+  cards:      '<rect x="4" y="3" width="13" height="18" rx="2"/><path d="M9 8l1.5 2L13 9"/>',
+  back:       '<polyline points="15 18 9 12 15 6"/>',
+  target:     '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>',
+};
+
+function hydrateStaticIcons() {
+  document.querySelectorAll('[data-icn]').forEach(el => {
+    const name = el.dataset.icn;
+    const cls = el.dataset.icnCls || '';
+    el.outerHTML = icn(name, cls);
+  });
+}
+function icn(name, extraCls) {
+  const path = ICON_PATHS[name];
+  if (!path) return '';
+  const fillMode = (name === 'dot' || name === 'checkCircle' || name === 'xCircle') ? '' : 'fill="none"';
+  return `<svg class="icn${extraCls ? ' ' + extraCls : ''}" viewBox="0 0 24 24" ${fillMode} stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
+}
+
 // ── Native detection (Capacitor) ─────────────────────────────────────────────
 const IS_NATIVE = !!(window.Capacitor?.isNativePlatform?.());
 
@@ -37,7 +92,7 @@ const G = {
   // punishment (set at game start from picker, preserved across Reset)
   punishSingular: 'push-up',
   punishPlural:   'push-ups',
-  punishIcon:     '💪',
+  punishIcon:     'dumbbell',
 };
 
 // ── Action Dispatch ───────────────────────────────────────────────────────────
@@ -123,6 +178,7 @@ async function openRemoveAdsModal() {
 }
 
 refreshRemoveAdsVisibility();
+hydrateStaticIcons();
 
 // ── Screen helpers ────────────────────────────────────────────────────────────
 function showScreen(id) {
@@ -263,7 +319,7 @@ function renderLobby(room) {
     const div = document.createElement('div');
     div.className = 'lobby-player' + (p.socketId === room.hostSocketId ? ' host' : '') + (p.ready ? ' ready' : '');
     div.innerHTML = `<div class="lp-dot"></div><span class="lp-name">${esc(p.name)}</span>` +
-      `<span class="lp-ready-tag">${p.ready ? '✅ Ready' : '⏳ Not ready'}</span>` +
+      `<span class="lp-ready-tag">${p.ready ? icn('check') + ' Ready' : icn('clock') + ' Not ready'}</span>` +
       `${i === room.myIndex ? '<span style="color:#fbbf24;font-size:0.78rem;margin-left:8px">(you)</span>' : ''}`;
     list.appendChild(div);
   });
@@ -271,13 +327,13 @@ function renderLobby(room) {
   const me = room.players[room.myIndex];
   const readyBtn = document.getElementById('ready-btn');
   const nowReady = !!me?.ready;
-  readyBtn.textContent = nowReady ? '✕ Not Ready' : '✓ I\'m Ready';
+  readyBtn.innerHTML = nowReady ? `${icn('x')} Not Ready` : `${icn('check')} I'm Ready`;
   readyBtn.classList.toggle('btn-gold', !nowReady);
   readyBtn.classList.toggle('btn-outline', nowReady);
 
   const statusEl = document.getElementById('lobby-status');
   if (room.countdown != null) {
-    statusEl.textContent = `🚀 Starting in ${room.countdown}…`;
+    statusEl.innerHTML = `${icn('zap')} Starting in ${room.countdown}…`;
   } else if (room.players.length < 2) {
     statusEl.textContent = 'Waiting for at least 1 more player…';
   } else {
@@ -288,11 +344,11 @@ function renderLobby(room) {
 
 // ── Punishment picker ─────────────────────────────────────────────────────────
 const PUNISHMENT_PRESETS = [
-  { id: 'pushups', icon: '💪', label: 'Push-ups',    s: 'push-up',    p: 'push-ups' },
-  { id: 'situps',  icon: '🏋️', label: 'Sit-ups',     s: 'sit-up',     p: 'sit-ups' },
-  { id: 'squats',  icon: '🦵', label: 'Squats',       s: 'squat',      p: 'squats' },
-  { id: 'plank',   icon: '⏱️', label: 'Sec. Plank',   s: 'sec plank',  p: 'sec plank' },
-  { id: 'custom',  icon: '✏️', label: 'Custom…',      s: null,         p: null },
+  { id: 'pushups', icon: 'dumbbell', label: 'Push-ups',    s: 'push-up',    p: 'push-ups' },
+  { id: 'situps',  icon: 'dumbbell', label: 'Sit-ups',     s: 'sit-up',     p: 'sit-ups' },
+  { id: 'squats',  icon: 'dumbbell', label: 'Squats',       s: 'squat',      p: 'squats' },
+  { id: 'plank',   icon: 'clock',    label: 'Sec. Plank',   s: 'sec plank',  p: 'sec plank' },
+  { id: 'custom',  icon: 'edit',     label: 'Custom…',      s: null,         p: null },
 ];
 let selectedPunishId = 'pushups';
 let customPunishText = '';
@@ -306,7 +362,7 @@ function renderPunishmentPicker() {
     btn.type = 'button';
     const accent = i % 2 === 0 ? 'accent-fire' : 'accent-purple';
     btn.className = `punish-tile ${accent}` + (preset.id === selectedPunishId ? ' selected' : '');
-    btn.innerHTML = `<span class="punish-tile-icon">${preset.icon}</span><span class="punish-tile-label">${esc(preset.label)}</span>`;
+    btn.innerHTML = `<span class="punish-tile-icon">${icn(preset.icon)}</span><span class="punish-tile-label">${esc(preset.label)}</span>`;
     btn.onclick = () => {
       selectedPunishId = preset.id;
       renderPunishmentPicker();
@@ -322,7 +378,7 @@ function readPunishment() {
   if (preset.id === 'custom') {
     const raw = (document.getElementById('custom-punish-input')?.value ?? '').trim() || 'rep';
     customPunishText = raw;
-    return { s: raw, p: raw + 's', icon: '✏️' };
+    return { s: raw, p: raw + 's', icon: 'edit' };
   }
   return { s: preset.s, p: preset.p, icon: preset.icon };
 }
@@ -337,12 +393,21 @@ const EMOJI_AVATAR_LIST = [
 let setupAvatars = {};     // { 1: '🦁', 2: 'data:image/...', ... }
 let avatarEditingIdx = null;
 
-function avatarHTML(avatar, cls) {
-  if (!avatar) return `<div class="${cls}"></div>`;
-  if (avatar.startsWith('data:')) {
+// Emoji avatars don't render reliably in the native WebView (same root cause
+// as every other icon fix this pass) — fall back to a colored initial.
+const AVATAR_COLORS = ['#F2AD00','#FF6A00','#7C3AED','#00C875','#3B82F6','#FF2EDC','#EF4444','#22D3EE'];
+function avatarColorFor(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
+}
+function avatarHTML(avatar, cls, name) {
+  if (avatar && avatar.startsWith('data:')) {
     return `<div class="${cls}" style="background-image:url('${avatar}');background-size:cover;background-position:center;font-size:0"></div>`;
   }
-  return `<div class="${cls}">${avatar}</div>`;
+  const label = esc((name || '?').trim().charAt(0).toUpperCase() || '?');
+  const color = avatarColorFor(name || '?');
+  return `<div class="${cls} avatar-initial" style="background:${color}">${label}</div>`;
 }
 
 function openAvatarPicker(idx) {
@@ -398,11 +463,17 @@ function _refreshAvBtn(idx) {
   const av = setupAvatars[idx] ?? '';
   if (av.startsWith('data:')) {
     btn.textContent = '';
+    btn.style.background = '';
     btn.style.backgroundImage = `url('${av}')`;
     btn.classList.add('has-photo');
+    btn.classList.remove('avatar-initial');
   } else {
+    // Emoji avatars don't render reliably in the native WebView — show a
+    // colored player number instead (matches avatarHTML's fallback).
     btn.style.backgroundImage = '';
-    btn.textContent = av;
+    btn.textContent = idx;
+    btn.style.background = avatarColorFor(String(idx));
+    btn.classList.add('avatar-initial');
     btn.classList.remove('has-photo');
   }
 }
@@ -434,7 +505,7 @@ function selectCount(n, btn) {
     const row = document.createElement('div');
     row.className = 'player-setup-row';
     row.innerHTML = `
-      <button class="av-btn" id="av-btn-${i}" type="button" onclick="openAvatarPicker(${i})">${emoji}</button>
+      <button class="av-btn avatar-initial" id="av-btn-${i}" type="button" onclick="openAvatarPicker(${i})" style="background:${avatarColorFor(String(i))}">${i}</button>
       <input type="text" placeholder="Player ${i}" value="Player ${i}" id="pname-${i}" />
     `;
     inp.appendChild(row);
@@ -635,7 +706,8 @@ function renderHeatGauge() {
   const fill  = document.getElementById('heat-gauge-fill');
   if (!gauge || !fill) return;
   const heat = G.streakPunishment || 0;
-  gauge.classList.toggle('hidden', heat <= 0);
+  // Offline shows the Danger Meter instead (same position) — avoid stacking both.
+  gauge.classList.toggle('hidden', heat <= 0 || MODE === 'offline');
   fill.style.height = `${Math.min(heat / HEAT_GAUGE_MAX, 1) * 100}%`;
 }
 
@@ -682,10 +754,10 @@ function renderScoreboard() {
     div.className = 'player-entry' + (i === G.currentPlayerIndex ? ' active' : '');
     const isMe = MODE === 'online' && i === myPlayerIndex;
     div.innerHTML = `
-      ${avatarHTML(p.avatar ?? '', 'av-sm')}
+      ${avatarHTML(p.avatar ?? '', 'av-sm', p.name)}
       <div class="pname">${esc(p.name)}${isMe ? ' <span class="pme">(you)</span>' : ''}</div>
-      <div class="pstats"><span class="pi">${G.punishIcon}</span><span class="pn">${p.pushUps}</span></div>
-      ${p.healthCards.length ? `<div class="phealth">${'💚'.repeat(p.healthCards.length)}</div>` : ''}
+      <div class="pstats"><span class="pi">${icn(G.punishIcon)}</span><span class="pn">${p.pushUps}</span></div>
+      ${p.healthCards.length ? `<div class="phealth">${icn('heart').repeat(p.healthCards.length)}</div>` : ''}
     `;
   });
   while (el.children.length > G.players.length) el.removeChild(el.lastChild);
@@ -697,12 +769,12 @@ function renderCard(id, card) {
   el.className = 'card';
   if (card.type === 'health') {
     el.classList.add('health-card');
-    el.innerHTML = `<div class="special-label">Health</div><div style="font-size:2.2rem">❤️</div>`;
+    el.innerHTML = `<div class="special-label">Health</div>${icn('heart', 'icn-lg')}`;
     return;
   }
   if (card.type === 'joker') {
     el.classList.add('joker-card', card.color === 'red' ? 'red-card' : 'black-card');
-    el.innerHTML = `<div class="special-label">Joker</div><div style="font-size:2rem">🃏</div><div class="special-label">${card.color}</div>`;
+    el.innerHTML = `<div class="special-label">Joker</div>${icn('star', 'icn-lg')}<div class="special-label">${card.color}</div>`;
     return;
   }
   el.classList.add(card.color === 'red' ? 'red-card' : 'black-card');
@@ -725,7 +797,7 @@ function renderTurnBanner() {
   if (!p) return;
   if (G.challengedIdx !== null) {
     const challenger = G.players[G.challengerId];
-    banner.innerHTML = `⚡ ${esc(challenger?.name ?? '?')} → ${avatarHTML(p.avatar ?? '', 'av-sm')}${esc(p.name)}`;
+    banner.innerHTML = `${icn('zap')} ${esc(challenger?.name ?? '?')} ${icn('play', 'icn-sm')} ${avatarHTML(p.avatar ?? '', 'av-sm', p.name)}${esc(p.name)}`;
     banner.classList.add('challenge-active');
     return;
   }
@@ -733,7 +805,7 @@ function renderTurnBanner() {
   const isMe = MODE === 'online' && G.currentPlayerIndex === myPlayerIndex;
   banner.innerHTML = isMe
     ? `Your Turn (${esc(p.name)})`
-    : `${avatarHTML(p.avatar ?? '', 'av-sm')}${esc(p.name)}'s Turn`;
+    : `${avatarHTML(p.avatar ?? '', 'av-sm', p.name)}${esc(p.name)}'s Turn`;
 }
 
 function renderChallengeZone() {
@@ -746,7 +818,7 @@ function renderChallengeZone() {
   const activeIdx = MODE === 'online' ? myPlayerIndex : G.currentPlayerIndex;
   if (activeIdx !== G.currentPlayerIndex) { zone.classList.add('hidden'); return; }
   zone.classList.remove('hidden');
-  zone.appendChild(mkBtn('⚡ Challenge', 'btn btn-challenge', () => showChallengePicker()));
+  zone.appendChild(mkBtn(`${icn('zap')} Challenge`, 'btn btn-challenge', () => showChallengePicker()));
 }
 
 function showChallengePicker() {
@@ -756,7 +828,7 @@ function showChallengePicker() {
     if (i === G.currentPlayerIndex) return;
     const btn = document.createElement('button');
     btn.className = 'challenge-target-btn';
-    btn.innerHTML = `${avatarHTML(p.avatar ?? '', 'av-sm')}<span class="ct-name">${esc(p.name)}</span><span class="ct-pushups">${p.pushUps} ${G.punishIcon}</span>`;
+    btn.innerHTML = `${avatarHTML(p.avatar ?? '', 'av-sm', p.name)}<span class="ct-name">${esc(p.name)}</span><span class="ct-pushups">${p.pushUps} ${icn(G.punishIcon)}</span>`;
     btn.onclick = () => {
       document.getElementById('challenge-modal').classList.add('hidden');
       ACTION.challenge(i);
@@ -775,7 +847,7 @@ function renderFlipZone() {
   const p = G.players[G.currentPlayerIndex];
   const deckLen = MODE === 'online' ? G.deckCount : G.deck.length;
   if (p && p.healthCards.length >= 2 && deckLen > 0)
-    zone.appendChild(mkBtn('🔮 Flip −2 (peek next card)', 'btn btn-flip', () => ACTION.useFlip()));
+    zone.appendChild(mkBtn(`${icn('eye')} Flip −2 (peek next card)`, 'btn btn-flip', () => ACTION.useFlip()));
 }
 
 function renderWaitingBanner() {
@@ -797,19 +869,19 @@ function renderGuessZone() {
   if (G.streakPunishment > 0) {
     const heat = document.createElement('div');
     heat.className = 'heat-banner';
-    heat.innerHTML = `<span class="heat-dice">${diceDisplay(G.streakPunishment)}</span><span class="heat-text">🔥 ${G.streakPunishment} heat — whoever gets it wrong pays this!</span>`;
+    heat.innerHTML = `<span class="heat-dice">${diceDisplay(G.streakPunishment)}</span><span class="heat-text">${icn('flame')} ${G.streakPunishment} heat — whoever gets it wrong pays this!</span>`;
     zone.appendChild(heat);
   }
   const isChallenge = G.challengedIdx !== null;
   const guess = (choice) => isChallenge ? ACTION.challengeGuess(choice) : ACTION.guess(choice);
   if (card.type === 'number') {
-    zone.appendChild(mkBtn('▲ Higher', 'btn btn-higher', () => guess('higher')));
-    zone.appendChild(mkBtn('▼ Lower',  'btn btn-lower',  () => guess('lower')));
+    zone.appendChild(mkBtn(`${icn('triUp')} Higher`, 'btn btn-higher', () => guess('higher')));
+    zone.appendChild(mkBtn(`${icn('triDown')} Lower`, 'btn btn-lower',  () => guess('lower')));
   } else {
-    zone.appendChild(mkBtn('🔴 Red',   'btn btn-red',   () => guess('red')));
-    zone.appendChild(mkBtn('⚫ Black', 'btn btn-black', () => guess('black')));
+    zone.appendChild(mkBtn(`${icn('dot')} Red`, 'btn btn-red',   () => guess('red')));
+    zone.appendChild(mkBtn(`${icn('dot')} Black`, 'btn btn-black', () => guess('black')));
   }
-  zone.appendChild(mkBtn('🃏 Joker', 'btn btn-joker', () => guess('joker')));
+  zone.appendChild(mkBtn(`${icn('star')} Joker`, 'btn btn-joker', () => guess('joker')));
 }
 
 function renderActionZone() {
@@ -823,21 +895,17 @@ function renderActionZone() {
   if (G.streakPunishment > 0) {
     const heat = document.createElement('div');
     heat.className = 'heat-banner';
-    heat.innerHTML = `<span class="heat-dice">${diceDisplay(G.streakPunishment)}</span><span class="heat-text">🔥 ${G.streakPunishment} heat riding · Continue → ${next} · whoever gets it wrong pays!</span>`;
+    heat.innerHTML = `<span class="heat-dice">${diceDisplay(G.streakPunishment)}</span><span class="heat-text">${icn('flame')} ${G.streakPunishment} heat riding · Continue to ${next} · whoever gets it wrong pays!</span>`;
     zone.appendChild(heat);
   }
-  if (G.passAvailable) zone.appendChild(mkBtn('Pass ➡', 'btn btn-pass', () => ACTION.pass()));
-  const contLabel = G.streakPunishment > 0 ? `Continue ▶ (+1 🔥 → ${next})` : 'Continue ▶';
+  if (G.passAvailable) zone.appendChild(mkBtn(`Pass ${icn('play')}`, 'btn btn-pass', () => ACTION.pass()));
+  const contLabel = G.streakPunishment > 0 ? `Continue ${icn('play')} (+1 ${icn('flame')} to ${next})` : `Continue ${icn('play')}`;
   zone.appendChild(mkBtn(contLabel, 'btn btn-continue', () => ACTION.continuePlay()));
 }
 
 function diceDisplay(n) {
-  const faces = ['⚀','⚁','⚂','⚃','⚄','⚅'];
   if (n <= 0) return '';
-  const parts = [];
-  let rem = n;
-  while (rem > 0) { const v = Math.min(rem, 6); parts.push(faces[v - 1]); rem -= v; }
-  return parts.join(' ');
+  return icn('dot', 'icn-sm').repeat(Math.min(n, 12));
 }
 
 function punish(n) {
@@ -850,7 +918,7 @@ function updateHTPPunishment() {
   const cm = document.getElementById('challenge-modal-sub');
   if (cm) cm.textContent = `Pick a player to guess for you. If they're right, you do 3 ${G.punishPlural}.`;
   const cs = document.getElementById('challenge-splash-sub');
-  if (cs) cs.innerHTML = `Guess right → they do 3 ${G.punishPlural}<br>Guess wrong → you do 1 ${G.punishSingular}`;
+  if (cs) cs.innerHTML = `Guess right ${icn('play', 'icn-sm')} they do 3 ${G.punishPlural}<br>Guess wrong ${icn('play', 'icn-sm')} you do 1 ${G.punishSingular}`;
 }
 
 function renderPenaltyZone() {
@@ -876,10 +944,10 @@ function renderPenaltyZone() {
     setTimeout(() => {
       if (penaltyRenderGen !== gen) return;
       if (p?.healthCards.length > 0)
-        zone.appendChild(mkBtn('💚 Skip (use 1 health card)', 'btn btn-skip', () => ACTION.skipPenalty()));
+        zone.appendChild(mkBtn(`${icn('heart')} Skip (use 1 health card)`, 'btn btn-skip', () => ACTION.skipPenalty()));
       if (canShowRewarded())
-        zone.appendChild(mkBtn('📺 Watch Ad to Skip', 'btn btn-outline', () => ACTION.adSkipPenalty()));
-      zone.appendChild(mkBtn('Done ✓', 'btn btn-done', () => ACTION.donePenalty()));
+        zone.appendChild(mkBtn(`${icn('tv')} Watch Ad to Skip`, 'btn btn-outline', () => ACTION.adSkipPenalty()));
+      zone.appendChild(mkBtn(`Done ${icn('check')}`, 'btn btn-done', () => ACTION.donePenalty()));
     }, 550);
 
   } else if (G.phase === 'others-penalty') {
@@ -891,7 +959,7 @@ function renderPenaltyZone() {
       if (G.penaltyQueue.includes(myPlayerIndex)) {
         zone.classList.remove('hidden');
         zone.innerHTML = `<div class="pushup-num">2×</div><div class="pushup-label">Joker penalty — do your ${G.punishPlural}!</div>`;
-        zone.appendChild(mkBtn('Done ✓', 'btn btn-done', () => ACTION.confirmOtherDone(myPlayerIndex)));
+        zone.appendChild(mkBtn(`Done ${icn('check')}`, 'btn btn-done', () => ACTION.confirmOtherDone(myPlayerIndex)));
       } else {
         zone.classList.remove('hidden');
         const names = G.penaltyQueue.map(i => G.players[i]?.name).filter(Boolean).join(', ');
@@ -902,7 +970,7 @@ function renderPenaltyZone() {
       const idx = G.penaltyQueue[0];
       const p = G.players[idx];
       zone.innerHTML = `<div class="pushup-num">2×</div><div class="pushup-label">${esc(p?.name ?? '')} — Joker Penalty!</div>`;
-      zone.appendChild(mkBtn(`${esc(p?.name ?? '')}: Done ✓`, 'btn btn-done', () => ACTION.confirmOtherDone(idx)));
+      zone.appendChild(mkBtn(`${esc(p?.name ?? '')}: Done ${icn('check')}`, 'btn btn-done', () => ACTION.confirmOtherDone(idx)));
     }
 
   } else {
@@ -930,7 +998,7 @@ function renderResultIndicator() {
 
   labelCurrent.textContent = correctJokerGuess ? 'Current' : 'Previous';
   labelNext.textContent    = correctJokerGuess ? 'Joker Drawn' : 'Drawn';
-  badge.textContent = correct ? `✓ ${guessLabel}` : `✗ ${guessLabel}`;
+  badge.innerHTML = correct ? `${icn('check')} ${guessLabel}` : `${icn('x')} ${guessLabel}`;
   badge.className = '';
   void badge.offsetWidth;
   badge.className = `result-badge ${correct ? 'correct-badge' : 'wrong-badge'}`;
@@ -943,15 +1011,15 @@ function renderSidePile() {
     badge.classList.add('hidden');
     return;
   }
-  const icons = G.sidePile.map(c => c.color === 'red' ? '🔴' : '⚫').join('');
-  badge.textContent = `🃏 ${icons} out`;
+  const icons = G.sidePile.map(c => `<span class="${c.color === 'red' ? 'side-dot-red' : 'side-dot-black'}">${icn('dot', 'icn-sm')}</span>`).join('');
+  badge.innerHTML = `${icn('star', 'icn-sm')} ${icons} out`;
   badge.classList.remove('hidden');
 }
 
 // ── Handoff & Challenge Splash helpers (offline only) ────────────────────────
 function showHandoff(name, sub, onReady) {
   document.getElementById('handoff-name').textContent = name;
-  document.getElementById('handoff-sub').textContent = sub;
+  document.getElementById('handoff-sub').innerHTML = sub;
   const btn = document.getElementById('handoff-ready-btn');
   btn.onclick = () => {
     document.getElementById('handoff-overlay').classList.add('hidden');
@@ -961,7 +1029,7 @@ function showHandoff(name, sub, onReady) {
 }
 
 function showChallengeSplash(challengerName) {
-  document.getElementById('splash-title').textContent = `⚡ ${challengerName} challenged you!`;
+  document.getElementById('splash-title').innerHTML = `${icn('zap')} ${esc(challengerName)} challenged you!`;
   const btn = document.getElementById('challenge-accept-btn');
   btn.onclick = () => {
     document.getElementById('challenge-splash').classList.add('hidden');
@@ -998,7 +1066,7 @@ function offlineGuess(choice) {
   if (next.type === 'health') {
     G.players[G.currentPlayerIndex].healthCards.push(next);
     G.drawnCard = null;
-    showMsg(`💚 Health Card! ${G.players[G.currentPlayerIndex].name} keeps a health card. Keep guessing!`, 'health');
+    showMsg(`${icn('heart')} Health Card! ${esc(G.players[G.currentPlayerIndex].name)} keeps a health card. Keep guessing!`, 'health');
     renderScoreboard();
     renderFlipZone();
     renderGuessZone();
@@ -1012,7 +1080,7 @@ function offlineGuess(choice) {
       G.sidePile.push(next);
       G.penaltyQueue = G.players.map((_, i) => i).filter(i => i !== G.currentPlayerIndex);
       G.penaltyQueue.forEach(i => { G.players[i].pushUps += 2; });
-      showMsg(`🃏 Joker! Correct! All other players do 2 ${G.punishPlural}!`, 'correct');
+      showMsg(`${icn('star')} Joker! Correct! All other players do 2 ${G.punishPlural}!`, 'correct');
       G.phase = 'others-penalty';
       G.lastGuessCorrect = true;
     } else {
@@ -1025,7 +1093,7 @@ function offlineGuess(choice) {
       G.phase = 'wrong';
       G.passAfterPenalty = true;
       G.lastGuessCorrect = false;
-      showMsg(`❌ Not a Joker! ${cardNameStr(next)}. ${p.name} does ${total} ${punish(total)}${heat > 0 ? ` (🔥 +${heat} heat)` : ''}!`, 'wrong');
+      showMsg(`${icn('x')} Not a Joker! ${cardNameStr(next)}. ${esc(p.name)} does ${total} ${punish(total)}${heat > 0 ? ` (${icn('flame')} +${heat} heat)` : ''}!`, 'wrong');
     }
     triggerReveal();
     return;
@@ -1041,7 +1109,7 @@ function offlineGuess(choice) {
     G.phase = 'wrong';
     G.passAfterPenalty = true;
     G.lastGuessCorrect = false;
-    showMsg(`🃏 Joker drawn! ${p.name} does ${total} ${punish(total)}${heat > 0 ? ` (🔥 +${heat} heat)` : ''}!`, 'wrong');
+    showMsg(`${icn('star')} Joker drawn! ${esc(p.name)} does ${total} ${punish(total)}${heat > 0 ? ` (${icn('flame')} +${heat} heat)` : ''}!`, 'wrong');
     triggerReveal();
     return;
   }
@@ -1053,7 +1121,7 @@ function offlineGuess(choice) {
     G.passAvailable = true;
     G.phase = 'correct';
     G.lastGuessCorrect = true;
-    showMsg(`✅ Correct! ${cardNameStr(next)}`, 'correct');
+    showMsg(`${icn('check')} Correct! ${cardNameStr(next)}`, 'correct');
   } else {
     const p = G.players[G.currentPlayerIndex];
     const heat = G.streakPunishment; G.streakPunishment = 0;
@@ -1064,7 +1132,7 @@ function offlineGuess(choice) {
     G.phase = 'wrong';
     G.passAfterPenalty = false;
     G.lastGuessCorrect = false;
-    showMsg(`❌ ${result.reason ? result.reason + ' — ' : ''}${cardNameStr(next)}. ${p.name} does ${total} ${punish(total)}${heat > 0 ? ` (🔥 +${heat} heat)` : ''}!`, 'wrong');
+    showMsg(`${icn('x')} ${result.reason ? result.reason + ' — ' : ''}${cardNameStr(next)}. ${esc(p.name)} does ${total} ${punish(total)}${heat > 0 ? ` (${icn('flame')} +${heat} heat)` : ''}!`, 'wrong');
   }
   triggerReveal();
 }
@@ -1084,7 +1152,7 @@ function offlineDonePenalty() {
   clearMsg();
   if (G.deck.length === 0) { offlineEndGame(); return; }
   if (returnToChallenger) {
-    showHandoff(G.players[G.currentPlayerIndex].name, '⚡ Back to you, challenger!', renderAll);
+    showHandoff(G.players[G.currentPlayerIndex].name, `${icn('zap')} Back to you, challenger!`, renderAll);
   } else if (passNext) {
     showHandoff(G.players[G.currentPlayerIndex].name, 'Your turn!', renderAll);
   } else {
@@ -1108,9 +1176,9 @@ function offlineSkipPenalty() {
     G.currentPlayerIndex = (G.currentPlayerIndex + 1) % G.players.length;
     G.turnPushUps = 0; G.streakPunishment = 0;
   }
-  showMsg(`💚 Skip used! ${p.name} avoids the penalty.`, 'health');
+  showMsg(`${icn('heart')} Skip used! ${esc(p.name)} avoids the penalty.`, 'health');
   if (returnToChallenger) {
-    showHandoff(G.players[G.currentPlayerIndex].name, '⚡ Back to you, challenger!', renderAll);
+    showHandoff(G.players[G.currentPlayerIndex].name, `${icn('zap')} Back to you, challenger!`, renderAll);
   } else if (passNext) {
     showHandoff(G.players[G.currentPlayerIndex].name, 'Your turn!', renderAll);
   } else {
@@ -1133,9 +1201,9 @@ function offlineAdSkipPenalty() {
     G.currentPlayerIndex = (G.currentPlayerIndex + 1) % G.players.length;
     G.turnPushUps = 0; G.streakPunishment = 0;
   }
-  showMsg(`📺 Ad watched! ${p.name} skips the penalty.`, 'health');
+  showMsg(`${icn('tv')} Ad watched! ${esc(p.name)} skips the penalty.`, 'health');
   if (returnToChallenger) {
-    showHandoff(G.players[G.currentPlayerIndex].name, '⚡ Back to you, challenger!', renderAll);
+    showHandoff(G.players[G.currentPlayerIndex].name, `${icn('zap')} Back to you, challenger!`, renderAll);
   } else if (passNext) {
     showHandoff(G.players[G.currentPlayerIndex].name, 'Your turn!', renderAll);
   } else {
@@ -1153,7 +1221,7 @@ function offlineChallenge(targetIdx) {
   const challengerName = G.players[G.challengerId].name;
   showHandoff(
     G.players[targetIdx].name,
-    "⚡ You've been challenged!",
+    `${icn('zap')} You've been challenged!`,
     () => showChallengeSplash(challengerName)
   );
 }
@@ -1172,7 +1240,7 @@ function offlineChallengeGuess(choice) {
   if (next.type === 'health') {
     G.players[G.currentPlayerIndex].healthCards.push(next);
     G.drawnCard = null;
-    showMsg(`💚 Health Card! ${challengedName} keeps a health card. Keep guessing!`, 'health');
+    showMsg(`${icn('heart')} Health Card! ${esc(challengedName)} keeps a health card. Keep guessing!`, 'health');
     renderScoreboard(); renderGuessZone();
     return;
   }
@@ -1187,14 +1255,14 @@ function offlineChallengeGuess(choice) {
       G.players[challengerIdx].pushUps += 3;
       G.pendingPushUps = 3; G.turnPushUps = 3; G.streakPunishment = 0; G.phase = 'wrong'; G.passAfterPenalty = true;
       G.lastGuessCorrect = true;
-      showMsg(`🃏 Joker! ${challengedName} wins the challenge — ${challengerName} does 3 ${G.punishPlural}!`, 'correct');
+      showMsg(`${icn('star')} Joker! ${esc(challengedName)} wins the challenge — ${esc(challengerName)} does 3 ${G.punishPlural}!`, 'correct');
     } else {
       // Challenged wrong (guessed joker, not joker) — always 1 push-up, challenger's turn resumes
       G.players[G.currentPlayerIndex].pushUps += 1;
       G.pendingPushUps = 1; G.turnPushUps += 1; G.currentCard = next;
       G.phase = 'wrong'; G.passAfterPenalty = false;
       G.lastGuessCorrect = false;
-      showMsg(`❌ Not a Joker! ${cardNameStr(next)}. ${challengedName} does 1 ${G.punishSingular}!`, 'wrong');
+      showMsg(`${icn('x')} Not a Joker! ${cardNameStr(next)}. ${esc(challengedName)} does 1 ${G.punishSingular}!`, 'wrong');
     }
     triggerReveal(); return;
   }
@@ -1205,7 +1273,7 @@ function offlineChallengeGuess(choice) {
     G.players[G.currentPlayerIndex].pushUps += 1;
     G.pendingPushUps = 1; G.turnPushUps += 1; G.phase = 'wrong'; G.passAfterPenalty = false;
     G.lastGuessCorrect = false;
-    showMsg(`🃏 Joker drawn! ${challengedName} does 1 ${G.punishSingular}!`, 'wrong');
+    showMsg(`${icn('star')} Joker drawn! ${esc(challengedName)} does 1 ${G.punishSingular}!`, 'wrong');
     triggerReveal(); return;
   }
 
@@ -1218,13 +1286,13 @@ function offlineChallengeGuess(choice) {
     G.players[challengerIdx].pushUps += 3;
     G.pendingPushUps = 3; G.turnPushUps = 3; G.streakPunishment = 0; G.phase = 'wrong'; G.passAfterPenalty = true;
     G.lastGuessCorrect = true;
-    showMsg(`✅ ${cardNameStr(next)} — ${challengedName} wins! ${challengerName} does 3 ${G.punishPlural}!`, 'correct');
+    showMsg(`${icn('check')} ${cardNameStr(next)} — ${esc(challengedName)} wins! ${esc(challengerName)} does 3 ${G.punishPlural}!`, 'correct');
   } else {
     // Challenged player wrong — always 1 push-up, turn returns to challenger after Done
     G.players[G.currentPlayerIndex].pushUps += 1;
     G.pendingPushUps = 1; G.turnPushUps += 1; G.phase = 'wrong'; G.passAfterPenalty = false;
     G.lastGuessCorrect = false;
-    showMsg(`❌ ${cardNameStr(next)}. ${challengedName} does 1 ${G.punishSingular}!`, 'wrong');
+    showMsg(`${icn('x')} ${cardNameStr(next)}. ${esc(challengedName)} does 1 ${G.punishSingular}!`, 'wrong');
   }
   triggerReveal();
 }
@@ -1247,7 +1315,7 @@ function offlinePass() {
   clearMsg();
   if (G.deck.length === 0) { offlineEndGame(); return; }
   const heat = G.streakPunishment;
-  const sub = heat > 0 ? `🔥 ${heat} heat riding — get it wrong and you pay!` : 'Your turn!';
+  const sub = heat > 0 ? `${icn('flame')} ${heat} heat riding — get it wrong and you pay!` : 'Your turn!';
   showHandoff(G.players[G.currentPlayerIndex].name, sub, renderAll);
 }
 
@@ -1305,18 +1373,18 @@ function renderEndScreen() {
   const minPU  = sorted[0]?.pushUps ?? 0;
   const isTie  = sorted.length > 1 && sorted[1].pushUps === minPU;
   document.getElementById('end-winner-name').textContent =
-    isTie ? "It's a tie! 🤝" : `🎉 ${sorted[0]?.name ?? ''} wins!`;
+    isTie ? `It's a tie! ${icn("heart")}` : `${icn("sparkle")} ${esc(sorted[0]?.name ?? '')} wins!`;
 
   const el = document.getElementById('end-players');
   el.innerHTML = '';
-  const medals = ['🥇','🥈','🥉'];
+  const medals = [icn('medal','icn-lg medal-gold'), icn('medal','icn-lg medal-silver'), icn('medal','icn-lg medal-bronze')];
   sorted.forEach((p, i) => {
     const div = document.createElement('div');
     div.className = 'end-player' + (p.pushUps === minPU && !isTie ? ' end-winner' : '');
     div.innerHTML = `
       <span class="end-medal">${medals[i] || `${i + 1}.`}</span>
       <span class="end-name">${esc(p.name)}</span>
-      <span class="end-score">${p.pushUps} ${G.punishIcon}</span>
+      <span class="end-score">${p.pushUps} ${icn(G.punishIcon)}</span>
     `;
     el.appendChild(div);
   });
@@ -1325,23 +1393,23 @@ function renderEndScreen() {
   statsEl.innerHTML = '';
   const total = G.players.reduce((s, p) => s + p.pushUps, 0);
   const statItems = [];
-  if (total > 0) statItems.push({ icon: '📊', text: `${total} total ${G.punishPlural} across all players` });
+  if (total > 0) statItems.push({ icon: 'chart', text: `${total} total ${G.punishPlural} across all players` });
   if (G.players.length > 1) {
     const maxPU = Math.max(...G.players.map(p => p.pushUps));
     if (maxPU > 0) {
       const hardest = G.players.filter(p => p.pushUps === maxPU).map(p => esc(p.name)).join(' &amp; ');
-      statItems.push({ icon: '🔥', text: `Hardest hit: ${hardest} (${maxPU} ${G.punishPlural})` });
+      statItems.push({ icon: 'flame', text: `Hardest hit: ${hardest} (${maxPU} ${G.punishPlural})` });
     }
   }
   const maxChallenge = Math.max(...G.players.map(p => p.challengesIssued || 0));
   if (maxChallenge > 0) {
     const boldest = G.players.filter(p => (p.challengesIssued || 0) === maxChallenge).map(p => esc(p.name)).join(' &amp; ');
-    statItems.push({ icon: '⚡', text: `Most challenges issued: ${boldest} (${maxChallenge})` });
+    statItems.push({ icon: 'zap', text: `Most challenges issued: ${boldest} (${maxChallenge})` });
   }
   statItems.forEach(({ icon, text }) => {
     const div = document.createElement('div');
     div.className = 'end-stat';
-    div.innerHTML = `<span class="end-stat-icon">${icon}</span><span>${text}</span>`;
+    div.innerHTML = `<span class="end-stat-icon">${icn(icon)}</span><span>${text}</span>`;
     statsEl.appendChild(div);
   });
 }
@@ -1369,15 +1437,15 @@ function spawnConfetti() {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function mkBtn(text, className, onClick) {
+function mkBtn(html, className, onClick) {
   const b = document.createElement('button');
-  b.textContent = text; b.className = className; b.onclick = onClick;
+  b.innerHTML = html; b.className = className; b.onclick = onClick;
   return b;
 }
 
-function showMsg(text, type) {
+function showMsg(html, type) {
   const el = document.getElementById('msg');
-  el.textContent = text; el.className = `msg ${type}`; el.classList.remove('hidden');
+  el.innerHTML = html; el.className = `msg ${type}`; el.classList.remove('hidden');
 }
 
 function clearMsg() { document.getElementById('msg').classList.add('hidden'); }

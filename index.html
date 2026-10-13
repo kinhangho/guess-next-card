@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>HOT DECK</title>
+  <title>Bank or Burn</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- non-render-blocking font load: page paints immediately, fonts swap in when ready -->
@@ -16,21 +16,21 @@
 <!-- ── Home Screen ── -->
 <div id="home-screen">
   <div class="setup-box">
-    <div class="hd-logo">HOT <span class="hd-logo-deck">DECK</span></div>
+    <div class="hd-logo">BANK <span class="hd-logo-or">or</span> <span class="hd-logo-burn">BURN</span></div>
     <p class="subtitle hd-tagline">Same friends. Bigger risks. Hotter nights.</p>
     <div class="home-btn-col">
-      <button class="btn btn-fire btn-wide" onclick="showScreen('setup-screen'); initOfflineSetup()">🔥 Quick Play</button>
-      <button id="online-btn" class="btn btn-outline btn-wide" onclick="showScreen('online-screen'); initSocket()">🌐 Play Online</button>
-      <button class="btn btn-ghost btn-wide" onclick="document.getElementById('how-to-play-modal').classList.remove('hidden')">📖 How to Play</button>
+      <button class="btn btn-fire btn-wide" onclick="showScreen('setup-screen'); initOfflineSetup()"><span data-icn="flame"></span> Quick Play</button>
+      <button id="online-btn" class="btn btn-outline btn-wide" onclick="showScreen('online-screen'); initSocket()"><span data-icn="globe"></span> Play Online</button>
+      <button class="btn btn-ghost btn-wide" onclick="document.getElementById('how-to-play-modal').classList.remove('hidden')"><span data-icn="book"></span> How to Play</button>
     </div>
-    <button id="remove-ads-link" class="btn-ghost-link hidden" onclick="openRemoveAdsModal()">🚫 Remove Ads</button>
+    <button id="remove-ads-link" class="btn-ghost-link hidden" onclick="openRemoveAdsModal()"><span data-icn="ban"></span> Remove Ads</button>
   </div>
 </div>
 
 <!-- ── Remove Ads Modal ── -->
 <div id="remove-ads-modal" class="modal hidden">
   <div class="modal-box">
-    <h2>🚫 Remove Ads</h2>
+    <h2><span data-icn="ban"></span> Remove Ads</h2>
     <p id="remove-ads-price">Loading price…</p>
     <p class="modal-note">One-time purchase. Removes all ads, forever, on this Apple ID.</p>
     <button class="btn btn-gold btn-wide" onclick="ACTION.buyRemoveAds()">Remove Ads</button>
@@ -42,8 +42,8 @@
 <!-- ── Online Setup Screen ── -->
 <div id="online-screen" class="hidden">
   <div class="setup-box">
-    <button class="back-btn" onclick="showScreen('home-screen')">← Back</button>
-    <div class="logo">🌐</div>
+    <button class="back-btn" onclick="showScreen('home-screen')"><span data-icn="back" data-icn-cls="icn-sm"></span> Back</button>
+    <div class="logo"><span data-icn="globe"></span></div>
     <h1>Online Play</h1>
 
     <div class="field-group">
@@ -72,7 +72,7 @@
 
     <div id="tab-quick" class="tab-panel hidden">
       <p class="field-label" style="text-align:center">Jump into an open room instantly, or start a new one for others to join.</p>
-      <button class="btn btn-gold btn-wide" onclick="quickStart()">⚡ Quick Start</button>
+      <button class="btn btn-gold btn-wide" onclick="quickStart()"><span data-icn="zap"></span> Quick Start</button>
     </div>
 
     <div id="online-error" class="error-msg hidden"></div>
@@ -82,8 +82,8 @@
 <!-- ── Lobby Screen ── -->
 <div id="lobby-screen" class="hidden">
   <div class="setup-box">
-    <button class="back-btn" onclick="leaveRoom()">← Leave</button>
-    <div class="logo">🎮</div>
+    <button class="back-btn" onclick="leaveRoom()"><span data-icn="back" data-icn-cls="icn-sm"></span> Leave</button>
+    <div class="logo"><span data-icn="gamepad"></span></div>
     <h1>Game Lobby</h1>
 
     <div id="room-code-display" class="room-code-box hidden">
@@ -95,7 +95,7 @@
     <div id="lobby-players" class="lobby-players"></div>
 
     <p id="lobby-status" class="lobby-status">Waiting for players…</p>
-    <button id="ready-btn" class="btn btn-gold btn-wide" onclick="toggleReady()">✓ I'm Ready</button>
+    <button id="ready-btn" class="btn btn-gold btn-wide" onclick="toggleReady()"><span data-icn="check"></span> I'm Ready</button>
     <div id="lobby-error" class="error-msg hidden"></div>
   </div>
 </div>
@@ -103,7 +103,7 @@
 <!-- ── Offline Setup Screen ── -->
 <div id="setup-screen" class="hidden">
   <div class="setup-box">
-    <button class="back-btn" onclick="showScreen('home-screen')">← Back</button>
+    <button class="back-btn" onclick="showScreen('home-screen')"><span data-icn="back" data-icn-cls="icn-sm"></span> Back</button>
     <div class="hd-logo hd-logo-sm">BUILD YOUR <span class="hd-logo-deck">CREW</span></div>
 
     <h2>How many players?</h2>
@@ -117,7 +117,7 @@
       <div id="custom-punish-row" class="hidden">
         <input id="custom-punish-input" class="text-input" type="text" placeholder="e.g. burpees" maxlength="20" />
       </div>
-      <button class="btn btn-fire btn-wide" onclick="startOfflineGame()">▶ Start Game</button>
+      <button class="btn btn-fire btn-wide" onclick="startOfflineGame()"><span data-icn="play"></span> Start Game</button>
     </div>
   </div>
 </div>
@@ -134,7 +134,7 @@
   <main class="main-area">
     <div id="screen-flash" class="screen-flash"></div>
     <div id="heat-gauge" class="heat-gauge hidden">
-      <div class="heat-gauge-flame">🔥</div>
+      <div class="heat-gauge-flame"><span data-icn="flame"></span></div>
       <div class="heat-gauge-track"><div id="heat-gauge-fill" class="heat-gauge-fill"></div></div>
     </div>
     <div id="danger-meter" class="danger-meter hidden">
@@ -154,11 +154,11 @@
     </div>
     <div class="felt-inner">
       <div class="top-bar">
-        <span class="game-name">🔥 HOT DECK</span>
+        <span class="game-name"><span data-icn="flame"></span> BANK OR BURN</span>
         <div style="display:flex;gap:6px;align-items:center">
           <span id="joker-status" class="deck-badge hidden"></span>
           <span id="deck-count" class="deck-badge">56 cards</span>
-          <button class="menu-btn" onclick="openGameMenu()" aria-label="Menu">☰</button>
+          <button class="menu-btn" onclick="openGameMenu()" aria-label="Menu"><span data-icn="menu"></span></button>
         </div>
       </div>
       <div id="turn-banner" class="turn-banner"></div>
@@ -172,7 +172,7 @@
           <div id="current-card" class="card"></div>
         </div>
         <div class="versus-col">
-          <div class="versus">▶</div>
+          <div class="versus"><span data-icn="play"></span></div>
           <div id="result-badge" class="result-badge hidden"></div>
         </div>
         <div class="card-station">
@@ -202,7 +202,7 @@
 <!-- ── Challenge Picker Modal ── -->
 <div id="challenge-modal" class="modal hidden">
   <div class="modal-box">
-    <h2>⚡ Challenge</h2>
+    <h2><span data-icn="zap"></span> Challenge</h2>
     <p id="challenge-modal-sub">Pick a player to guess for you. If they're right, you do 3 push-ups.</p>
     <div id="challenge-targets" class="challenge-targets"></div>
     <button class="btn btn-outline btn-wide" style="margin-top:4px" onclick="ACTION.cancelChallenge()">Cancel</button>
@@ -212,7 +212,7 @@
 <!-- ── Peek Modal ── -->
 <div id="peek-modal" class="modal hidden">
   <div class="modal-box">
-    <h2>🔮 Peek!</h2>
+    <h2><span data-icn="eye"></span> Peek!</h2>
     <p>The next card is:</p>
     <div id="peek-card" class="card" style="margin:20px auto;width:100px;height:140px"></div>
     <p class="modal-note">Both health cards shuffled back into the deck.</p>
@@ -223,7 +223,7 @@
 <!-- ── How to Play Modal ── -->
 <div id="how-to-play-modal" class="modal hidden" onclick="this.classList.add('hidden')">
   <div class="modal-box htp-box" onclick="event.stopPropagation()">
-    <h2>📖 How to Play</h2>
+    <h2><span data-icn="book"></span> How to Play</h2>
     <div class="htp-scroll">
       <div class="htp-hook">
         <div class="htp-hook-title">THE RULES ARE SIMPLE,<br>THE PRESSURE ISN'T</div>
@@ -236,7 +236,7 @@
         <div class="htp-hook-title">IT ESCALATES FAST</div>
         <ul class="htp-hook-list">
           <li>Heat climbs every time someone pushes their luck instead of passing — and it doesn't reset until somebody misses. Whoever that is pays for everyone's confidence.</li>
-          <li>Not feeling a card? <strong>Challenge</strong> someone else to guess in your place. Call it right and it's your win. Call it wrong and you're covering triple.</li>
+          <li>Not feeling a card? <strong>Challenge</strong> someone else to guess in your place. They call it wrong and you're in the clear. They call it right and you're covering triple.</li>
           <li>Guess <strong>Joker</strong> correctly and the whole table pays but you. Get caught off guard by one and you're the only one paying.</li>
           <li><strong>Health Cards</strong> turn up at random — hold one to dodge a penalty, hold two to sneak a peek at what's coming next.</li>
         </ul>
@@ -248,40 +248,40 @@
       </div>
       <div class="htp-section">
         <div class="htp-heading">The Deck (56 cards)</div>
-        <div class="htp-row"><span class="htp-icon">🂠</span><span class="htp-text">52 standard cards (A–K × ♥♦♣♠) · 2 Health Cards · 1 Red Joker · 1 Black Joker</span></div>
-        <div class="htp-row"><span class="htp-icon">📐</span><span class="htp-text">Ranks: A=1, 2–10, J=11, Q=12, K=13</span></div>
+        <div class="htp-row"><span class="htp-icon"><span data-icn="cards"></span></span><span class="htp-text">52 standard cards (A–K × ♥♦♣♠) · 2 Health Cards · 1 Red Joker · 1 Black Joker</span></div>
+        <div class="htp-row"><span class="htp-icon"><span data-icn="chart"></span></span><span class="htp-text">Ranks: A=1, 2–10, J=11, Q=12, K=13</span></div>
       </div>
       <div class="htp-section">
         <div class="htp-heading">Your Turn — Guess the Next Card</div>
-        <div class="htp-row"><span class="htp-icon">🔢</span><span class="htp-text"><strong>Number card showing (A–10)</strong> — tap <strong>Higher</strong>, <strong>Lower</strong>, or <strong>Joker</strong></span></div>
-        <div class="htp-row"><span class="htp-icon">👑</span><span class="htp-text"><strong>Face card showing (J, Q, K)</strong> — tap <strong>Red</strong>, <strong>Black</strong>, or <strong>Joker</strong></span></div>
+        <div class="htp-row"><span class="htp-icon"><span data-icn="chart"></span></span><span class="htp-text"><strong>Number card showing (A–10)</strong> — tap <strong>Higher</strong>, <strong>Lower</strong>, or <strong>Joker</strong></span></div>
+        <div class="htp-row"><span class="htp-icon"><span data-icn="crown"></span></span><span class="htp-text"><strong>Face card showing (J, Q, K)</strong> — tap <strong>Red</strong>, <strong>Black</strong>, or <strong>Joker</strong></span></div>
       </div>
       <div class="htp-section">
         <div class="htp-heading">Correct Guess</div>
-        <div class="htp-row"><span class="htp-icon">✅</span><span class="htp-text">Choose <strong>Pass</strong> (next player goes) or <strong>Continue</strong> guessing on the same turn.</span></div>
+        <div class="htp-row"><span class="htp-icon"><span data-icn="check"></span></span><span class="htp-text">Choose <strong>Pass</strong> (next player goes) or <strong>Continue</strong> guessing on the same turn.</span></div>
       </div>
       <div class="htp-section">
         <div class="htp-heading">Wrong Guess — Punishment!</div>
-        <div class="htp-row"><span class="htp-icon">❌</span><span class="htp-text">Wrong guess → <strong>1 <span class="htp-ps">push-up</span></strong>, keep guessing until you're right.</span></div>
-        <div class="htp-row"><span class="htp-icon">🟰</span><span class="htp-text">Same number → <strong>2 <span class="htp-pp">push-ups</span></strong></span></div>
-        <div class="htp-row"><span class="htp-icon">🎯</span><span class="htp-text">Same number <em>and</em> same color → <strong>3 <span class="htp-pp">push-ups</span></strong></span></div>
+        <div class="htp-row"><span class="htp-icon"><span data-icn="x"></span></span><span class="htp-text">Wrong guess -> <strong>1 <span class="htp-ps">push-up</span></strong>, keep guessing until you're right.</span></div>
+        <div class="htp-row"><span class="htp-icon"><span data-icn="zap"></span></span><span class="htp-text">Same number -> <strong>2 <span class="htp-pp">push-ups</span></strong></span></div>
+        <div class="htp-row"><span class="htp-icon"><span data-icn="target"></span></span><span class="htp-text">Same number <em>and</em> same color -> <strong>3 <span class="htp-pp">push-ups</span></strong></span></div>
       </div>
       <div class="htp-section">
-        <div class="htp-heading">💚 Health Cards</div>
-        <div class="htp-row"><span class="htp-icon">💚</span><span class="htp-text">Drawn like any card — no penalty. You keep it.</span></div>
-        <div class="htp-row"><span class="htp-icon">1️⃣</span><span class="htp-text">Hold <strong>1</strong>: tap <strong>Skip</strong> to avoid any <span class="htp-ps">push-up</span> once (card removed).</span></div>
-        <div class="htp-row"><span class="htp-icon">2️⃣</span><span class="htp-text">Hold <strong>2</strong>: <strong>Skip −1</strong> (same) or <strong>Flip −2</strong> to peek the next card (both cards shuffled back).</span></div>
+        <div class="htp-heading"><span data-icn="heart"></span> Health Cards</div>
+        <div class="htp-row"><span class="htp-icon"><span data-icn="heart"></span></span><span class="htp-text">Drawn like any card — no penalty. You keep it.</span></div>
+        <div class="htp-row"><span class="htp-text">Hold <strong>1</strong>: tap <strong>Skip</strong> to avoid any <span class="htp-ps">push-up</span> once (card removed).</span></div>
+        <div class="htp-row"><span class="htp-text">Hold <strong>2</strong>: <strong>Skip −1</strong> (same) or <strong>Flip −2</strong> to peek the next card (both cards shuffled back).</span></div>
       </div>
       <div class="htp-section">
-        <div class="htp-heading">🃏 Jokers</div>
-        <div class="htp-row"><span class="htp-icon">✅</span><span class="htp-text">Correct Joker guess → all <em>other</em> players do 2 <span class="htp-pp">push-ups</span>. Joker set aside. You continue.</span></div>
-        <div class="htp-row"><span class="htp-icon">❌</span><span class="htp-text">Wrong Joker guess or surprise Joker → you do 2 <span class="htp-pp">push-ups</span>. Joker set aside. Next player's turn.</span></div>
+        <div class="htp-heading"><span data-icn="star"></span> Jokers</div>
+        <div class="htp-row"><span class="htp-icon"><span data-icn="check"></span></span><span class="htp-text">Correct Joker guess -> all <em>other</em> players do 2 <span class="htp-pp">push-ups</span>. Joker set aside. You continue.</span></div>
+        <div class="htp-row"><span class="htp-icon"><span data-icn="x"></span></span><span class="htp-text">Wrong Joker guess or surprise Joker -> you do 2 <span class="htp-pp">push-ups</span>. Joker set aside. Next player's turn.</span></div>
       </div>
       <div class="htp-section">
-        <div class="htp-heading">⚡ Challenge</div>
-        <div class="htp-row"><span class="htp-icon">⚡</span><span class="htp-text">Tap <strong>Challenge</strong> before guessing to dare another player to guess for you.</span></div>
-        <div class="htp-row"><span class="htp-icon">🏆</span><span class="htp-text">They guess <strong>right</strong> → you do <strong>3 <span class="htp-pp">push-ups</span></strong> and lose your turn.</span></div>
-        <div class="htp-row"><span class="htp-icon">💀</span><span class="htp-text">They guess <strong>wrong</strong> → they do <strong>1 <span class="htp-ps">push-up</span></strong>, your turn resumes.</span></div>
+        <div class="htp-heading"><span data-icn="zap"></span> Challenge</div>
+        <div class="htp-row"><span class="htp-icon"><span data-icn="zap"></span></span><span class="htp-text">Tap <strong>Challenge</strong> before guessing to dare another player to guess for you.</span></div>
+        <div class="htp-row"><span class="htp-icon"><span data-icn="trophy"></span></span><span class="htp-text">They guess <strong>right</strong> -> you do <strong>3 <span class="htp-pp">push-ups</span></strong> and lose your turn.</span></div>
+        <div class="htp-row"><span class="htp-icon"><span data-icn="x"></span></span><span class="htp-text">They guess <strong>wrong</strong> -> they do <strong>1 <span class="htp-ps">push-up</span></strong>, your turn resumes.</span></div>
       </div>
     </div>
     <button class="btn btn-gold btn-wide" onclick="document.getElementById('how-to-play-modal').classList.add('hidden')">Got it!</button>
@@ -292,11 +292,11 @@
 <div id="game-menu" class="modal game-menu-modal hidden" onclick="if(this===event.target)closeGameMenu()">
   <div class="game-menu-box">
     <div class="game-menu-title">Menu</div>
-    <button class="game-menu-item" onclick="closeGameMenu()">▶ Resume</button>
-    <button id="reset-game-item" class="game-menu-item" onclick="resetGame()">↺ Reset Game</button>
-    <button class="game-menu-item" onclick="closeGameMenu();document.getElementById('how-to-play-modal').classList.remove('hidden')">📖 How to Play</button>
-    <button id="remove-ads-menu-item" class="game-menu-item hidden" onclick="closeGameMenu();openRemoveAdsModal()">🚫 Remove Ads</button>
-    <button class="game-menu-item game-menu-quit" onclick="quitToHome()">✕ Quit to Main</button>
+    <button class="game-menu-item" onclick="closeGameMenu()"><span data-icn="play"></span> Resume</button>
+    <button id="reset-game-item" class="game-menu-item" onclick="resetGame()"><span data-icn="refresh"></span> Reset Game</button>
+    <button class="game-menu-item" onclick="closeGameMenu();document.getElementById('how-to-play-modal').classList.remove('hidden')"><span data-icn="book"></span> How to Play</button>
+    <button id="remove-ads-menu-item" class="game-menu-item hidden" onclick="closeGameMenu();openRemoveAdsModal()"><span data-icn="ban"></span> Remove Ads</button>
+    <button class="game-menu-item game-menu-quit" onclick="quitToHome()"><span data-icn="x"></span> Quit to Main</button>
   </div>
 </div>
 
@@ -304,7 +304,7 @@
 <div id="avatar-sheet" class="modal avatar-sheet-modal hidden" onclick="if(this===event.target)closeAvatarSheet()">
   <div class="avatar-sheet-box">
     <div class="avatar-sheet-title">Choose Avatar</div>
-    <button class="btn btn-outline btn-wide" type="button" onclick="triggerAvatarFile()">📷 Photo / Camera</button>
+    <button class="btn btn-outline btn-wide" type="button" onclick="triggerAvatarFile()"><span data-icn="camera"></span> Photo / Camera</button>
     <div class="emoji-grid-label">Or pick an icon</div>
     <div class="emoji-grid" id="emoji-grid"></div>
     <button class="btn btn-ghost btn-wide" type="button" onclick="closeAvatarSheet()" style="margin-top:4px">Cancel</button>
@@ -315,20 +315,20 @@
 <!-- ── Handoff Overlay ── -->
 <div id="handoff-overlay" class="fullscreen-overlay hidden">
   <div class="overlay-content">
-    <div class="overlay-avatar">👤</div>
+    <div class="overlay-avatar"><span data-icn="user"></span></div>
     <div id="handoff-name" class="overlay-name">Player</div>
     <div id="handoff-sub" class="overlay-sub">Your turn!</div>
-    <button class="btn btn-gold btn-wide" id="handoff-ready-btn">I'm Ready →</button>
+    <button class="btn btn-gold btn-wide" id="handoff-ready-btn">I'm Ready <span data-icn="play" data-icn-cls="icn-sm"></span></button>
   </div>
 </div>
 
 <!-- ── Challenge Splash ── -->
 <div id="challenge-splash" class="fullscreen-overlay challenge-splash-bg hidden">
   <div class="overlay-content">
-    <div class="overlay-bolt">⚡</div>
+    <div class="overlay-bolt"><span data-icn="zap"></span></div>
     <div id="splash-title" class="overlay-name splash-name"></div>
-    <div id="challenge-splash-sub" class="overlay-sub">Guess right → they do 3 push-ups<br>Guess wrong → you do 1 push-up</div>
-    <button class="btn btn-challenge btn-wide" id="challenge-accept-btn">Accept ⚡</button>
+    <div id="challenge-splash-sub" class="overlay-sub">Guess right <span data-icn="play" data-icn-cls="icn-sm"></span> they do 3 push-ups<br>Guess wrong <span data-icn="play" data-icn-cls="icn-sm"></span> you do 1 push-up</div>
+    <button class="btn btn-challenge btn-wide" id="challenge-accept-btn">Accept <span data-icn="zap"></span></button>
   </div>
 </div>
 
@@ -336,7 +336,7 @@
 <div id="end-screen" class="hidden">
   <div id="confetti-container" class="confetti-container"></div>
   <div class="setup-box" style="z-index:1">
-    <div id="end-trophy" class="logo">🏆</div>
+    <div id="end-trophy" class="logo"><span data-icn="trophy"></span></div>
     <h1>Game Over!</h1>
     <p id="end-winner-name" class="subtitle"></p>
     <div id="end-players" class="end-players"></div>
