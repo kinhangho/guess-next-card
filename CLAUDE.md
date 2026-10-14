@@ -156,7 +156,7 @@ On their turn (before guessing), the current player may tap **⚡ Challenge** to
 - **Challenged player guesses wrong** → they do **1 rep** (always, regardless of same-rank/color); the challenger's turn resumes from the new current card.
 - **Challenged player guesses right** → the challenger does **3 reps** and their turn ends (next player goes).
 
-The Challenge button is shown during the guessing phase when there are at least 2 players. Implemented in both offline and online builds.
+The Challenge button is shown during the guessing phase when there are at least 2 players. Each player may issue at most **2 challenges per game** (`MAX_CHALLENGES_PER_PLAYER` in `game.js`/`server.js`, tracked via each player's `challengesIssued` counter, reset on a fresh game). The button label shows challenges remaining and disappears once a player hits the cap. Implemented in both offline and online builds.
 
 ---
 

@@ -83,7 +83,7 @@ Drawn from the deck like any other card — no penalty when drawn; play continue
 
 ## Challenge ⚡
 
-Before guessing, tap **⚡ Challenge** to dare another player to guess for you.
+Before guessing, tap **⚡ Challenge** to dare another player to guess for you. Each player gets **2 challenges per game**.
 
 | Outcome | Result |
 |---|---|

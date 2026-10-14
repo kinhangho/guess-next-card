@@ -13,22 +13,35 @@ app.use(express.static(path.join(__dirname, 'public')));
 const rooms = new Map();
 
 const TARGET_ROOM_SIZE = 5;
-const BOT_NAMES = ['RoboRex','ByteBot','ChipsAhoy','TurboTron','PixelPal','CircuitSam','NullPointer','ByteMe','LagSpike','ZeroDay'];
-const BOT_AVATARS = ['🤖','👾','🦾','⚙️','💾'];
+const MAX_CHALLENGES_PER_PLAYER = 2;
+const BOT_NAMES = ['Alex','Jordan','Sam','Taylor','Morgan','Casey','Riley','Jamie','Avery','Quinn','Drew','Reese'];
+const BOT_AVATARS = ['🦁','🐯','🦊','🐼','🐸','🐨','🐙','🦋','🐶','🐱','🐻','🦄','🦅','🌈','🎮','🏆','🎯','🎲','💎','🚀','🌙','⭐','🍀','🎭','🐲','🦸'];
 
-function makeBot() {
-  const name = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
-  const avatar = BOT_AVATARS[Math.floor(Math.random() * BOT_AVATARS.length)];
+function pickUnused(pool, used) {
+  const available = pool.filter(x => !used.has(x));
+  const choices = available.length > 0 ? available : pool;
+  const pick = choices[Math.floor(Math.random() * choices.length)];
+  used.add(pick);
+  return pick;
+}
+
+function makeBot(usedNames, usedAvatars) {
   return {
     socketId: `bot-${crypto.randomBytes(6).toString('hex')}`,
-    name: `${name} ${avatar}`,
+    name: pickUnused(BOT_NAMES, usedNames),
+    avatar: pickUnused(BOT_AVATARS, usedAvatars),
     pushUps: 0, healthCards: [], challengesIssued: 0,
     ready: true, connected: true, isBot: true,
   };
 }
 
 function fillWithBots(room, target) {
-  while (room.players.length < target) room.players.push(makeBot());
+  const usedNames = new Set(room.players.filter(p => p.isBot).map(p => p.name));
+  const usedAvatars = new Set(room.players.filter(p => p.isBot).map(p => p.avatar));
+  while (room.players.length < target) {
+    const bot = makeBot(usedNames, usedAvatars);
+    room.players.push(bot);
+  }
 }
 
 function trimBotsToFit(room, target) {
@@ -577,6 +590,7 @@ io.on('connection', socket => {
     const myIdx = room.players.findIndex(p => p.socketId === socket.id);
     if (myIdx !== room.currentPlayerIndex) return;
     if (targetIdx === myIdx || targetIdx < 0 || targetIdx >= room.players.length) return;
+    if ((room.players[myIdx].challengesIssued || 0) >= MAX_CHALLENGES_PER_PLAYER) return;
     room.turnPushUps = 0;
     room.players[myIdx].challengesIssued = (room.players[myIdx].challengesIssued || 0) + 1;
     room.challengerId = myIdx;

@@ -198,6 +198,7 @@ function showError(elId, msg) {
 // backend, so io() has no same-origin server to default to — point it at the
 // deployed server explicitly. Web keeps same-origin (empty string = current page).
 const SERVER_URL = IS_NATIVE ? 'https://dare-dare-dare.onrender.com' : '';
+const MAX_CHALLENGES_PER_PLAYER = 2;
 
 function initSocket() {
   if (socket && socket.connected) return;
@@ -207,6 +208,7 @@ function initSocket() {
     MODE = 'online';
     const prevPhase = G.phase;
     const prevChallengedIdx = G.challengedIdx;
+    const prevCurrentCard = G.currentCard;
     myPlayerIndex        = room.myIndex;
     currentRoomId        = room.id;
     isHost               = room.hostSocketId === socket.id;
@@ -232,6 +234,7 @@ function initSocket() {
     const justResolved = prevPhase === 'guessing' &&
       (G.phase === 'correct' || G.phase === 'wrong' || G.phase === 'others-penalty') &&
       G.drawnCard != null;
+    if (justResolved) G.revealFrom = prevCurrentCard;
 
     if (room.status === 'lobby') {
       renderLobby(room);
@@ -729,11 +732,12 @@ function triggerReveal() {
   void nextEl.offsetWidth;
   nextEl.classList.add('reveal-anim', G.lastGuessCorrect ? 'glow-correct' : 'glow-wrong');
   flashScreen(!!G.lastGuessCorrect);
+  const previousCard = G.revealFrom;
   setTimeout(() => {
     G.revealPause = false;
     G.revealFrom  = null;
     G.lastGuess   = null;
-    renderCard('current-card', G.currentCard);
+    renderCard('current-card', previousCard ?? G.currentCard);
     renderResultIndicator();
     renderCard('next-card', null);
     renderActionZone();
@@ -818,8 +822,10 @@ function renderChallengeZone() {
   }
   const activeIdx = MODE === 'online' ? myPlayerIndex : G.currentPlayerIndex;
   if (activeIdx !== G.currentPlayerIndex) { zone.classList.add('hidden'); return; }
+  const challengesLeft = MAX_CHALLENGES_PER_PLAYER - (G.players[G.currentPlayerIndex].challengesIssued || 0);
+  if (challengesLeft <= 0) { zone.classList.add('hidden'); return; }
   zone.classList.remove('hidden');
-  zone.appendChild(mkBtn(`${icn('zap')} Challenge`, 'btn btn-challenge', () => showChallengePicker()));
+  zone.appendChild(mkBtn(`${icn('zap')} Challenge (${challengesLeft} left)`, 'btn btn-challenge', () => showChallengePicker()));
 }
 
 function showChallengePicker() {
@@ -1213,6 +1219,7 @@ function offlineAdSkipPenalty() {
 }
 
 function offlineChallenge(targetIdx) {
+  if ((G.players[G.currentPlayerIndex].challengesIssued || 0) >= MAX_CHALLENGES_PER_PLAYER) return;
   AUDIO.challenge();
   G.turnPushUps = 0;
   G.challengerId = G.currentPlayerIndex;
