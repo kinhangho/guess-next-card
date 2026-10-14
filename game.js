@@ -63,6 +63,7 @@ let socket = null;
 let myPlayerIndex = -1;
 let currentRoomId = null;
 let isHost = false;
+let myPlayerId = null;
 
 // ── Shared Game State ─────────────────────────────────────────────────────────
 const G = {
@@ -204,6 +205,10 @@ function initSocket() {
   if (socket && socket.connected) return;
   socket = io(SERVER_URL);
 
+  socket.on('connect', () => {
+    if (currentRoomId && myPlayerId) socket.emit('rejoin', { roomId: currentRoomId, playerId: myPlayerId });
+  });
+
   socket.on('game-state', (room) => {
     MODE = 'online';
     const prevPhase = G.phase;
@@ -211,6 +216,7 @@ function initSocket() {
     const prevCurrentCard = G.currentCard;
     myPlayerIndex        = room.myIndex;
     currentRoomId        = room.id;
+    myPlayerId           = room.players[room.myIndex]?.playerId ?? myPlayerId;
     isHost               = room.hostSocketId === socket.id;
     G.players            = room.players;
     G.deckCount          = room.deckCount;
@@ -291,6 +297,7 @@ function toggleReady() {
 function leaveRoom() {
   if (socket && currentRoomId) socket.emit('leave-room', { roomId: currentRoomId });
   currentRoomId = null;
+  myPlayerId = null;
   showScreen('home-screen');
 }
 

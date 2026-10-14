@@ -14,6 +14,7 @@ const rooms = new Map();
 
 const TARGET_ROOM_SIZE = 5;
 const MAX_CHALLENGES_PER_PLAYER = 2;
+const DISCONNECT_GRACE_MS = 30000;
 const BOT_NAMES = ['Alex','Jordan','Sam','Taylor','Morgan','Casey','Riley','Jamie','Avery','Quinn','Drew','Reese'];
 const BOT_AVATARS = ['🦁','🐯','🦊','🐼','🐸','🐨','🐙','🦋','🐶','🐱','🐻','🦄','🦅','🌈','🎮','🏆','🎯','🎲','💎','🚀','🌙','⭐','🍀','🎭','🐲','🦸'];
 
@@ -53,13 +54,22 @@ function trimBotsToFit(room, target) {
 }
 
 function makeRoomId() { return crypto.randomBytes(3).toString('hex').toUpperCase(); }
+function makePlayerId() { return crypto.randomBytes(8).toString('hex'); }
+
+function makeHumanPlayer(socketId, name) {
+  return {
+    socketId, playerId: makePlayerId(), name,
+    pushUps: 0, healthCards: [], challengesIssued: 0,
+    ready: false, connected: true, disconnectTimer: null,
+  };
+}
 
 function createRoom(hostSocketId, hostName, isPrivate) {
   const id = makeRoomId();
   const room = {
     id, isPrivate, hostSocketId,
     status: 'lobby',
-    players: [{ socketId: hostSocketId, name: hostName, pushUps: 0, healthCards: [], challengesIssued: 0, ready: false, connected: true }],
+    players: [makeHumanPlayer(hostSocketId, hostName)],
     deck: [], currentCard: null, drawnCard: null, deckCount: 0,
     currentPlayerIndex: 0, sidePile: [],
     phase: 'guessing',
@@ -147,7 +157,11 @@ function broadcast(room) {
   room.players.forEach((p, idx) => {
     const s = io.sockets.sockets.get(p.socketId);
     if (!s) return;
-    const payload = { ...room, deck: undefined, countdownTimer: undefined, botTimer: undefined, myIndex: idx };
+    const players = room.players.map((pl, i) => {
+      const { disconnectTimer, playerId, ...rest } = pl;
+      return i === idx ? { ...rest, playerId } : rest;
+    });
+    const payload = { ...room, deck: undefined, countdownTimer: undefined, botTimer: undefined, players, myIndex: idx };
     if (idx !== room.currentPlayerIndex) payload.peekCard = null;
     s.emit('game-state', payload);
   });
@@ -244,6 +258,7 @@ function handleLeave(socket, roomId) {
   if (!room) return;
   const idx = room.players.findIndex(p => p.socketId === socket.id);
   if (idx === -1) return;
+  if (room.players[idx].disconnectTimer) clearTimeout(room.players[idx].disconnectTimer);
   socket.leave(roomId);
   room.players.splice(idx, 1);
   if (room.players.length === 0 || !room.players.some(p => !p.isBot)) {
@@ -500,7 +515,7 @@ io.on('connection', socket => {
     if (room) {
       if (room.players.some(p => p.socketId === socket.id)) { socket.join(room.id); broadcast(room); return; }
       trimBotsToFit(room, TARGET_ROOM_SIZE - 1);
-      room.players.push({ socketId: socket.id, name, pushUps: 0, healthCards: [], challengesIssued: 0, ready: false, connected: true });
+      room.players.push(makeHumanPlayer(socket.id, name));
       cancelCountdown(room);
     } else {
       room = createRoom(socket.id, name, false);
@@ -518,7 +533,7 @@ io.on('connection', socket => {
     if (room.players.length >= 10){ socket.emit('error', 'Room is full (max 10)'); return; }
     if (!room.isPrivate) trimBotsToFit(room, TARGET_ROOM_SIZE - 1);
     const name = (playerName || `Player ${room.players.length + 1}`).trim().slice(0, 20);
-    room.players.push({ socketId: socket.id, name, pushUps: 0, healthCards: [], challengesIssued: 0, ready: false, connected: true });
+    room.players.push(makeHumanPlayer(socket.id, name));
     socket.join(room.id);
     cancelCountdown(room);
     broadcast(room);
@@ -648,11 +663,26 @@ io.on('connection', socket => {
 
   socket.on('leave-room', ({ roomId }) => handleLeave(socket, roomId));
 
+  socket.on('rejoin', ({ roomId, playerId }) => {
+    const room = rooms.get(roomId);
+    if (!room) { socket.emit('error', 'That game no longer exists'); return; }
+    const p = room.players.find(pl => pl.playerId === playerId);
+    if (!p) { socket.emit('error', 'That game no longer exists'); return; }
+    if (p.disconnectTimer) { clearTimeout(p.disconnectTimer); p.disconnectTimer = null; }
+    p.socketId = socket.id;
+    p.connected = true;
+    socket.join(roomId);
+    broadcast(room);
+  });
+
   socket.on('disconnect', () => {
     rooms.forEach((_, roomId) => {
       const room = rooms.get(roomId);
-      if (room?.players.some(p => p.socketId === socket.id))
-        handleLeave(socket, roomId);
+      const p = room?.players.find(pl => pl.socketId === socket.id);
+      if (!p || p.isBot) return;
+      p.connected = false;
+      if (p.disconnectTimer) clearTimeout(p.disconnectTimer);
+      p.disconnectTimer = setTimeout(() => handleLeave(socket, roomId), DISCONNECT_GRACE_MS);
     });
   });
 });

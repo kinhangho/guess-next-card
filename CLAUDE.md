@@ -208,6 +208,23 @@ on native via `IS_NATIVE`; re-enabled — see `public/game.js`). Native builds
 connect to `SERVER_URL` (the deployed Render backend) explicitly, since a
 Capacitor local-scheme WebView has no same-origin server to default to.
 
+### Reconnect handling
+
+Every human player (never bots) gets a persistent `playerId` from the server,
+cached client-side in `myPlayerId`. On any Socket.IO reconnect (cellular drop,
+backgrounding, wifi handoff — all common on mobile, and each one issues a brand
+new `socket.id`), the client re-announces itself via a `rejoin` event; the
+server rebinds that `playerId` to the new `socket.id` instead of treating them
+as a new/different player. A disconnected player is kept in the room (marked
+`connected: false`) for `DISCONNECT_GRACE_MS` (30s) before being removed via
+the normal leave path — this window is what makes a brief reconnect invisible
+to the player. Without this, every room-scoped socket handler (`toggle-ready`,
+`guess`, etc.) matches by `socket.id` alone, so a stale ID after any reconnect
+makes every action silently no-op with no error shown — this was a real,
+previously-shipped bug (symptom: "I'm Ready" does nothing, forever, on that
+device, after any network blip). Don't match players by `socket.id` alone in
+new socket handlers — reconnects are routine on mobile, not an edge case.
+
 ## Skill routing
 
 When the user's request matches an available skill, invoke it via the Skill tool. When in doubt, invoke the skill.
