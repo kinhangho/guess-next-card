@@ -739,12 +739,11 @@ function triggerReveal() {
   void nextEl.offsetWidth;
   nextEl.classList.add('reveal-anim', G.lastGuessCorrect ? 'glow-correct' : 'glow-wrong');
   flashScreen(!!G.lastGuessCorrect);
-  const previousCard = G.revealFrom;
   setTimeout(() => {
     G.revealPause = false;
     G.revealFrom  = null;
     G.lastGuess   = null;
-    renderCard('current-card', previousCard ?? G.currentCard);
+    renderCard('current-card', G.currentCard);
     renderResultIndicator();
     renderCard('next-card', null);
     renderActionZone();
