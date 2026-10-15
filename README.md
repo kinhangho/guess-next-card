@@ -121,6 +121,16 @@ the default push-up labels. Available on web and in the native iOS app.
 - **Mobile**: Capacitor (iOS)
 - **Sound**: Web Audio API (procedural sound effects, no audio files)
 
+## Ads & Remove Ads (iOS)
+
+AdMob interstitial/rewarded ads (`public/ads.js`, native-only). Ads are
+non-personalized — no App Tracking Transparency prompt, no IDFA. A one-time
+"Remove Ads" non-consumable purchase (product ID
+`com.kinhang.guessnextcard.removeads`) permanently disables them for that
+Apple ID. See `CLAUDE.md`'s "Monetization" section for the full picture,
+including why there's intentionally no ATT handling and how to test the
+purchase flow locally via `ios/App/App/BankOrBurn.storekit`.
+
 ## Icons — SVG only, with one deliberate exception
 
 Every button/badge/menu icon in the app is an inline SVG (`ICON_PATHS` + `icn()` in `game.js`, hydrated from `data-icn="name"` placeholders in static HTML via `hydrateStaticIcons()`). **Do not use emoji or Unicode symbol characters for new UI icons.** This isn't a style preference — it was tested directly: the native iOS WKWebView (Capacitor) fails to fall back to a system glyph for *any* character outside the loaded web fonts, not just color emoji (a plain `☰` rendered blank too). Confirmed broken across four font-stack variants (plain, `-apple-system`, `'Apple Color Emoji'`, normal font-weight) on an iOS Simulator build.

@@ -225,6 +225,38 @@ previously-shipped bug (symptom: "I'm Ready" does nothing, forever, on that
 device, after any network blip). Don't match players by `socket.id` alone in
 new socket handlers — reconnects are routine on mobile, not an edge case.
 
+---
+
+## Monetization (Ads & IAP)
+
+`public/ads.js` wires up AdMob interstitial/rewarded ads and the "Remove Ads"
+non-consumable IAP (`@capacitor-community/admob` + `@capgo/native-purchases`,
+native-only, gated on `ADS_IS_NATIVE`). Both the ad unit IDs and the AdMob App
+ID (`Info.plist`'s `GADApplicationIdentifier`) are currently Google's shared
+test IDs — see the TODO block at the top of `ads.js` before shipping for real.
+
+**No App Tracking Transparency, intentionally.** Ads are non-personalized —
+IDFA/ATT is never requested. The AdMob plugin's `requestTrackingAuthorization`
+is marked deprecated upstream (superseded by the UMP consent flow `ads.js`
+already uses via `requestConsentInfo`/`showConsentForm`), and nothing in this
+app calls it. Don't add `NSUserTrackingUsageDescription` back to `Info.plist`
+or call that method unless you're actually implementing personalized ads —
+either one requires real ATT handling *and* an updated App Privacy answer in
+App Store Connect (Identifiers → Device ID, used for tracking, purpose:
+Third-Party Advertising). A stray tracking-usage key with no backing code was
+previously the exact cause of an App Store Connect privacy-mismatch warning
+against an otherwise-correct "Data Not Collected" declaration.
+
+**Remove Ads IAP**: product ID `com.kinhang.guessnextcard.removeads`
+(`REMOVE_ADS_PRODUCT_ID` in `ads.js`), type Non-Consumable — must exist in App
+Store Connect with that exact ID or purchases silently fail to find a match.
+`ios/App/App/BankOrBurn.storekit` is a local StoreKit Testing config for this
+same product, for generating Apple's required IAP review screenshot (a real
+purchase screen, not a mockup) before the real product has propagated —
+wire it in via Xcode's Edit Scheme → Run → Options → StoreKit Configuration.
+Per App Store Connect, a first IAP must be submitted together with a real app
+version (not just a TestFlight build).
+
 ## Skill routing
 
 When the user's request matches an available skill, invoke it via the Skill tool. When in doubt, invoke the skill.
