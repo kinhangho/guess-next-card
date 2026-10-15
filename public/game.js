@@ -1175,6 +1175,7 @@ function offlineDonePenalty() {
 
 function offlineSkipPenalty() {
   const p = G.players[G.currentPlayerIndex];
+  if (p.healthCards.length === 0) return;
   p.healthCards.pop();
   p.pushUps -= G.pendingPushUps;
   G.turnPushUps = Math.max(0, G.turnPushUps - G.pendingPushUps);
