@@ -7,6 +7,15 @@
 //   2. Replace GADApplicationIdentifier in ios/App/App/Info.plist with your real AdMob App ID
 //   3. Create an in-app purchase in App Store Connect with product ID REMOVE_ADS_PRODUCT_ID below
 //      (type: Non-Consumable)
+//
+// No App Tracking Transparency prompt: ads here are non-personalized (IDFA is
+// never requested), via UMP consent only (requestConsentInfo/showConsentForm
+// below) — the plugin's requestTrackingAuthorization() is marked deprecated
+// upstream and intentionally unused. Don't add NSUserTrackingUsageDescription
+// back to Info.plist or call that method unless you actually start requesting
+// personalized ads — either one requires real ATT handling and an updated App
+// Privacy declaration in App Store Connect (Identifiers > Device ID, used for
+// tracking, purpose: Third-Party Advertising).
 
 const ADS_IS_NATIVE = !!(window.Capacitor?.isNativePlatform?.());
 const AdMobPlugin = () => window.Capacitor?.Plugins?.AdMob;
