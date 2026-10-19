@@ -148,12 +148,16 @@ async function fetchRemoveAdsProduct() {
 
 async function purchaseRemoveAds() {
   const Purchases = PurchasesPlugin();
-  if (!Purchases) return false;
+  if (!Purchases) return { ok: false, cancelled: false, message: 'Purchases are not available right now.' };
   try {
     const tx = await Purchases.purchaseProduct({ productIdentifier: REMOVE_ADS_PRODUCT_ID, productType: 'inapp' });
-    if (tx) { persistAdsRemoved(true); return true; }
-    return false;
-  } catch (e) { return false; }
+    if (tx) { persistAdsRemoved(true); return { ok: true }; }
+    return { ok: false, cancelled: false, message: 'Purchase could not be completed. Please try again.' };
+  } catch (e) {
+    const msg = e?.message || '';
+    if (msg === 'User cancelled') return { ok: false, cancelled: true };
+    return { ok: false, cancelled: false, message: 'Purchase failed. Please try again later.' };
+  }
 }
 
 async function restorePurchases() {

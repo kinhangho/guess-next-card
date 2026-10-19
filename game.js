@@ -149,10 +149,15 @@ const ACTION = {
   },
   async buyRemoveAds() {
     const priceEl = document.getElementById('remove-ads-price');
-    const ok = await purchaseRemoveAds();
-    if (ok) {
+    const btn = document.getElementById('remove-ads-buy-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Processing…'; }
+    const result = await purchaseRemoveAds();
+    if (btn) { btn.disabled = false; btn.textContent = 'Remove Ads'; }
+    if (result.ok) {
       if (priceEl) priceEl.textContent = 'Purchased — thank you! Ads are now off.';
       refreshRemoveAdsVisibility();
+    } else if (!result.cancelled && priceEl) {
+      priceEl.textContent = result.message;
     }
   },
   async restorePurchasesClick() {
