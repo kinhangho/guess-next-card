@@ -1392,7 +1392,7 @@ function renderEndScreen() {
   const sorted = [...G.players].sort((a, b) => a.pushUps - b.pushUps);
   const minPU  = sorted[0]?.pushUps ?? 0;
   const isTie  = sorted.length > 1 && sorted[1].pushUps === minPU;
-  document.getElementById('end-winner-name').textContent =
+  document.getElementById('end-winner-name').innerHTML =
     isTie ? `It's a tie! ${icn("heart")}` : `${icn("sparkle")} ${esc(sorted[0]?.name ?? '')} wins!`;
 
   const el = document.getElementById('end-players');
