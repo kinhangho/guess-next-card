@@ -14,6 +14,8 @@ Every UI icon (buttons, badges, menu, modals) is inline SVG via `ICON_PATHS` + `
 
 **Exception, and an important caveat about where you test it:** the 30-option avatar picker (`EMOJI_AVATAR_LIST` in `game.js`) is real emoji on purpose, restored after a real iOS device (not the Simulator) showed it rendering correctly — directly contradicting the Simulator-based testing above. The Simulator appears to have its own font-loading quirk for this specific case that doesn't reflect real-device behavior. **If you're debugging icon/emoji rendering, test on a physical device before concluding something is broken** — for this one question, the Simulator is not trustworthy, even though it's fine for everything else (layout, color, animation, etc.). See README.md's "Running Locally" section for the real-device build/install commands (`xcrun devicectl`).
 
+**`icn()` returns an HTML string, not text** — assigning its result (or a template literal containing it) to `.textContent` renders the literal `<svg>...</svg>` markup as visible text instead of an icon. Always use `.innerHTML` for any element whose content includes `icn(...)`. This exact mistake shipped once (`renderEndScreen()`'s winner-name line) and showed up as raw SVG source text on the Game Over screen.
+
 ---
 
 ## Blaze mascot & Danger Meter
@@ -256,6 +258,21 @@ purchase screen, not a mockup) before the real product has propagated —
 wire it in via Xcode's Edit Scheme → Run → Options → StoreKit Configuration.
 Per App Store Connect, a first IAP must be submitted together with a real app
 version (not just a TestFlight build).
+
+**Purchase failures must be visible, not silent.** `purchaseRemoveAds()` in
+`ads.js` returns `{ ok, cancelled, message }` rather than a plain boolean, and
+`ACTION.buyRemoveAds()` in `game.js` shows a "Processing…" disabled state on
+the buy button while the purchase is in flight, then either success text or
+`message` on failure (staying quiet only on a user-initiated cancel). This
+isn't just UX polish — a version of this app was rejected under App Review
+guideline 2.1(b) with the reviewer describing the exact symptom of the old
+code (silently swallowing every purchase failure into `return false` with no
+caller feedback) as "the remove ads button was unresponsive." The actual root
+cause that review hit was almost certainly the account's Paid Apps Agreement
+not yet being Active (StoreKit can't complete any transaction without it,
+sandbox included) — but regardless of root cause, a purchase button must
+never fail with zero visible feedback, since that's indistinguishable from a
+genuine crash/freeze to anyone testing it, Apple reviewer or real user alike.
 
 ## Skill routing
 
